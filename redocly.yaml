@@ -1,0 +1,23 @@
+apis:
+  mood-metrics-api@v1:  # Alias for your spec – change if you have multiple versions
+    root: openapi.yaml  # Path to your OpenAPI file (relative or absolute)
+
+theme:
+  logo:
+    url: https://static.wixstatic.com/media/60a259_4d3b2a13b13e4edfb4efad2de8b9a8f1~mv2.png
+    width: 140px
+    height: 48px
+    linkUrl: https://mood-metrics-api.dev
+    linkTitle: Mood Metrics API – Documentation
+    glow: true                             # optional – adds a subtle glow effect
+
+  # Optional: make the primary color match your brand
+  colors:
+    primary:
+      main: "#0066ff"   # your brand color
+
+  # Optional extras you might like
+  hideDownloadButton: false
+  expandResponses: "200,201"
+  requiredPropsFirst: true
+  sortPropsAlphabetically: true

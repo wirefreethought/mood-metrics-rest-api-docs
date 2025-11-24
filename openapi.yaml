@@ -1,0 +1,474 @@
+openapi: 3.1.0
+info:
+  title: OpenAPI definition
+  version: v0
+servers:
+  - url: 'https://free-service.mood-metrics-api.dev'
+    description: Generated server url
+paths:
+  /analyses:
+    post:
+      tags:
+        - analysis-controller
+      operationId: anazlyeText
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AnalyzeTextRequest'
+        required: true
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/WftWsResultPayloadVoid'
+  '/system/jobs/{id}/status':
+    get:
+      tags:
+        - sys-job-controller
+      operationId: getJobStatus
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/WftWsResultPayloadVoid'
+  '/system/jobs/{id}':
+    get:
+      tags:
+        - sys-job-controller
+      operationId: getJob
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/WftWsResultSysJobStateVoid'
+  '/analyses/{id}':
+    get:
+      tags:
+        - analysis-controller
+      operationId: getSentimentAnalysis
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/WftWsResultSentimentAnalysisVoid'
+components:
+  schemas:
+    AnalyzeTextRequest:
+      type: object
+      properties:
+        feedId:
+          type: string
+        text:
+          type: string
+    Payload:
+      type: object
+      properties:
+        jobId:
+          type: string
+    WftError:
+      discriminator:
+        propertyName: type
+      properties:
+        type:
+          type: string
+      required:
+        - type
+    WftWsResultPayloadVoid:
+      type: object
+      properties:
+        data:
+          $ref: '#/components/schemas/Payload'
+        errors:
+          type: array
+          items:
+            $ref: '#/components/schemas/WftError'
+        metadata: {}
+    Progress:
+      type: object
+      properties:
+        details: {}
+        percentCompleted:
+          type: number
+          format: double
+        stageId:
+          $ref: '#/components/schemas/Stage'
+    Stage: {}
+    SysJobState:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        type:
+          type: string
+        resultId:
+          type: string
+          format: uuid
+        owner:
+          $ref: '#/components/schemas/WftMtUser'
+        progressTracking:
+          $ref: '#/components/schemas/WftProgressTracking'
+        status:
+          type: string
+          enum:
+            - CANCELED
+            - FAILED
+            - PENDING
+            - PROCESSING
+            - SUCCEEDED
+        ownerId:
+          type: string
+        tenantId:
+          type: string
+    WftMtUser:
+      type: object
+      properties:
+        tenantId:
+          type: string
+        userId:
+          type: string
+    WftProgressTracking:
+      type: object
+      properties:
+        progressStack:
+          type: array
+          items:
+            $ref: '#/components/schemas/Progress'
+        overallProgress:
+          $ref: '#/components/schemas/Progress'
+    WftWsResultSysJobStateVoid:
+      type: object
+      properties:
+        data:
+          $ref: '#/components/schemas/SysJobState'
+        errors:
+          type: array
+          items:
+            $ref: '#/components/schemas/WftError'
+        metadata: {}
+    ConversionObject:
+      type: object
+      properties:
+        logicalTypeName:
+          type: string
+        recommendedSchema:
+          $ref: '#/components/schemas/Schema'
+    EmotionScore:
+      type: object
+      properties:
+        emotion:
+          type: string
+          enum:
+            - HAPPINESS
+            - SADNESS
+            - FEAR
+            - ANGER
+            - SURPRISE
+            - DISGUST
+            - NEUTRAL
+        score:
+          type: number
+          format: double
+        schema:
+          $ref: '#/components/schemas/Schema'
+        specificData:
+          $ref: '#/components/schemas/SpecificData'
+    FastReaderBuilder:
+      type: object
+      properties:
+        keyClassEnabled:
+          type: boolean
+        classPropEnabled:
+          type: boolean
+    Field:
+      type: object
+      properties:
+        objectProps:
+          type: object
+          additionalProperties: {}
+    LogicalType:
+      type: object
+      properties:
+        name:
+          type: string
+    Schema:
+      type: object
+      properties:
+        type:
+          type: string
+          enum:
+            - RECORD
+            - ENUM
+            - ARRAY
+            - MAP
+            - UNION
+            - FIXED
+            - STRING
+            - BYTES
+            - INT
+            - LONG
+            - FLOAT
+            - DOUBLE
+            - BOOLEAN
+            - 'NULL'
+        logicalType:
+          $ref: '#/components/schemas/LogicalType'
+        name:
+          type: string
+        fields:
+          type: array
+          items:
+            $ref: '#/components/schemas/Field'
+        error:
+          type: boolean
+        fullName:
+          type: string
+        elementType: {}
+        aliases:
+          type: array
+          items:
+            type: string
+          uniqueItems: true
+        types:
+          type: array
+          items: {}
+        valueType: {}
+        namespace:
+          type: string
+        nullable:
+          type: boolean
+        enumSymbols:
+          type: array
+          items:
+            type: string
+        fixedSize:
+          type: integer
+          format: int32
+        union:
+          type: boolean
+        doc:
+          type: string
+        enumDefault:
+          type: string
+        objectProps:
+          type: object
+          additionalProperties: {}
+    SentimentAnalysis:
+      type: object
+      properties:
+        feedId:
+          type: string
+        ownerId:
+          type: string
+        tenantId:
+          type: string
+        sentiment:
+          type: string
+          enum:
+            - VERY_NEGATIVE
+            - NEGATIVE
+            - SLIGHTLY_NEGATIVE
+            - NEUTRAL
+            - SLIGHTLY_POSITIVE
+            - POSITIVE
+            - VERY_POSITIVE
+            - MIXED
+            - UNCERTAIN
+        sentimentScore:
+          type: number
+          format: double
+        emotionScores:
+          type: array
+          items:
+            $ref: '#/components/schemas/EmotionScore'
+        rationale:
+          type: string
+        schema:
+          $ref: '#/components/schemas/Schema'
+        specificData:
+          $ref: '#/components/schemas/SpecificData'
+    SpecificData:
+      type: object
+      properties:
+        classLoader:
+          type: object
+          properties:
+            name:
+              type: string
+            registeredAsParallelCapable:
+              type: boolean
+            parent:
+              type: object
+              properties:
+                name:
+                  type: string
+                registeredAsParallelCapable:
+                  type: boolean
+                unnamedModule:
+                  type: object
+                  properties:
+                    name:
+                      type: string
+                    descriptor:
+                      type: object
+                      properties:
+                        open:
+                          type: boolean
+                        automatic:
+                          type: boolean
+                    named:
+                      type: boolean
+                    annotations:
+                      type: array
+                      items: {}
+                    declaredAnnotations:
+                      type: array
+                      items: {}
+                    packages:
+                      type: array
+                      items:
+                        type: string
+                      uniqueItems: true
+                    nativeAccessEnabled:
+                      type: boolean
+                    layer: {}
+                definedPackages:
+                  type: array
+                  items:
+                    type: object
+                    properties:
+                      name:
+                        type: string
+                      annotations:
+                        type: array
+                        items: {}
+                      declaredAnnotations:
+                        type: array
+                        items: {}
+                      sealed:
+                        type: boolean
+                      specificationTitle:
+                        type: string
+                      specificationVersion:
+                        type: string
+                      specificationVendor:
+                        type: string
+                      implementationTitle:
+                        type: string
+                      implementationVersion:
+                        type: string
+                      implementationVendor:
+                        type: string
+                defaultAssertionStatus:
+                  type: boolean
+                  writeOnly: true
+            unnamedModule:
+              type: object
+              properties:
+                name:
+                  type: string
+                descriptor:
+                  type: object
+                  properties:
+                    open:
+                      type: boolean
+                    automatic:
+                      type: boolean
+                named:
+                  type: boolean
+                annotations:
+                  type: array
+                  items: {}
+                declaredAnnotations:
+                  type: array
+                  items: {}
+                packages:
+                  type: array
+                  items:
+                    type: string
+                  uniqueItems: true
+                nativeAccessEnabled:
+                  type: boolean
+                layer: {}
+            definedPackages:
+              type: array
+              items:
+                type: object
+                properties:
+                  name:
+                    type: string
+                  annotations:
+                    type: array
+                    items: {}
+                  declaredAnnotations:
+                    type: array
+                    items: {}
+                  sealed:
+                    type: boolean
+                  specificationTitle:
+                    type: string
+                  specificationVersion:
+                    type: string
+                  specificationVendor:
+                    type: string
+                  implementationTitle:
+                    type: string
+                  implementationVersion:
+                    type: string
+                  implementationVendor:
+                    type: string
+            defaultAssertionStatus:
+              type: boolean
+              writeOnly: true
+        conversions:
+          type: array
+          items:
+            $ref: '#/components/schemas/ConversionObject'
+        fastReaderEnabled:
+          type: boolean
+        fastReaderBuilder:
+          $ref: '#/components/schemas/FastReaderBuilder'
+        customCoders:
+          type: boolean
+          writeOnly: true
+    WftWsResultSentimentAnalysisVoid:
+      type: object
+      properties:
+        data:
+          $ref: '#/components/schemas/SentimentAnalysis'
+        errors:
+          type: array
+          items:
+            $ref: '#/components/schemas/WftError'
+        metadata: {}
+

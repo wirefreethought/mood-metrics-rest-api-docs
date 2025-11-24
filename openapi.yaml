@@ -1,10 +1,7 @@
 openapi: 3.1.0
 info:
   title: Mood Metrics API
-  version: v1.0.0-ALPHA
-  x-logo:
-    url: logo.png
-    backgroundColor: "#FFFFFF"
+
   description: |
     The Mood Metrics API provides powerful sentiment analysis on submitted text, with optional long-term tracking and anomaly detection using feed IDs. Perfect for monitoring brand perception, social media streams, customer feedback, support tickets, or real-time news sentiment.
 
@@ -35,9 +32,19 @@ info:
       <li><a href="http://wirefreethought.com/terms-of-service">API Terms of Service</a></li>
       <li>Contact: <a href="mailto:info@mood-metrics-api.dev">info@mood-metrics-api.dev</a></li>
     </ul>
+
+  version: v1.0.0-ALPHA
+
+  x-logo:
+    url: logo.png
+    backgroundColor: "#FFFFFF"
+
 servers:
-  - url: 'https://free-service.mood-metrics-api.dev'
   - url: 'https://mood-metrics.p.rapidapi.com'
+
+security:
+- UserSecurity: []
+
 paths:
   /analyses:
     post:
@@ -501,4 +508,10 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/WftError'
+
+  securitySchemes:
+    UserSecurity:
+      in: header
+      name: X-RapidAPI-Key
+      type: apiKey
 

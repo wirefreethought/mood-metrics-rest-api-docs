@@ -67,14 +67,6 @@ paths:
                 value:
                   text: "I absolutely love this product! It's the best thing ever!"
                   feedId: acme-corp-reviews
-              batch:
-                summary: Batch analysis (array of texts)
-                value:
-                  items:
-                    - text: Great service, very happy!
-                      feedId: customer-support
-                    - text: This is the worst experience I've ever had.
-                      feedId: customer-support
       responses:
         '200':
           description: Analysis job successfully created
@@ -196,16 +188,6 @@ components:
           type: string
           description: The text to analyze. Must be valid UTF-8. Supports all languages.
           example: This product changed my life – highly recommend!
-        items:
-          type: array
-          description: For batch requests – array of objects with `text` and optional `feedId`
-          items:
-            type: object
-            properties:
-              text:
-                type: string
-              feedId:
-                type: string
 
     Payload:
       type: object

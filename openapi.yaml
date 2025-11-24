@@ -145,7 +145,6 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/WftError'
-        metadata: {}
     Progress:
       type: object
       properties:
@@ -208,7 +207,6 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/WftError'
-        metadata: {}
     ConversionObject:
       type: object
       properties:
@@ -503,5 +501,4 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/WftError'
-        metadata: {}
 

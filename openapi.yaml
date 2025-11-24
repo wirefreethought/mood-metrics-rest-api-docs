@@ -5,6 +5,37 @@ info:
   x-logo:
     url: https://static.wixstatic.com/media/60a259_4d3b2a13b13e4edfb4efad2de8b9a8f1~mv2.png
     backgroundColor: "#FFFFFF"
+  description: |
+    The Mood Metrics API provides powerful sentiment analysis on submitted text, with optional long-term tracking and anomaly detection using feed IDs. Perfect for monitoring brand perception, social media streams, customer feedback, support tickets, or real-time news sentiment.
+
+    <ul>
+      <li>Instant sentiment classification: <strong>positive</strong>, <strong>negative</strong>, or <strong>neutral</strong></li>
+      <li>Confidence scores (0.0 – 1.0) for each primary emotion</li>
+      <li>Track sentiment over time by associating text with a custom <code>feedId</code></li>
+      <li>Detect sentiment trends, sudden shifts, and anomalies across a feed</li>
+      <li>Batch processing support for high-volume streams</li>
+      <li>Language-agnostic – works with any UTF-8 text</li>
+      <li>RESTful design with predictable resource-oriented URLs and HATEOAS-style pagination</li>
+      <li>Secure, scalable, cloud-backed infrastructure</li>
+    </ul>
+
+    <p><strong>Note:</strong> The API is currently in active development. Some endpoints and response fields may evolve. Historical data and trend detection features are being rolled out progressively – stay tuned for updates!</p>
+
+    <hr/>
+
+    <h3>Useful Resources</h3>
+    <ul>
+      <li>
+        SDKs & Clients
+        <ul>
+          <li>JavaScript / TypeScript (coming soon)</li>
+          <li>Sample apps & tutorials – <a href="https://github.com/your-org/mood-metrics-examples">GitHub repo</a></li>
+        </ul>
+      </li>
+      <li><a href="/openapi.yaml">OpenAPI / Swagger Specification</a></li>
+      <li><a href="http://wirefreethought.com/terms-of-service">API Terms of Service</a></li>
+      <li>Contact: <a href="mailto:info@mood-metrics-api.dev">info@mood-metrics-api.dev</a></li>
+    </ul>
 servers:
   - url: 'https://free-service.mood-metrics-api.dev'
     description: Generated server url
@@ -12,7 +43,7 @@ paths:
   /analyses:
     post:
       tags:
-        - analysis-controller
+        - analysis
       operationId: anazlyeText
       requestBody:
         content:
@@ -30,7 +61,7 @@ paths:
   '/system/jobs/{id}/status':
     get:
       tags:
-        - sys-job-controller
+        - job
       operationId: getJobStatus
       parameters:
         - name: id
@@ -49,7 +80,7 @@ paths:
   '/system/jobs/{id}':
     get:
       tags:
-        - sys-job-controller
+        - job
       operationId: getJob
       parameters:
         - name: id
@@ -68,7 +99,7 @@ paths:
   '/analyses/{id}':
     get:
       tags:
-        - analysis-controller
+        - analysis
       operationId: getSentimentAnalysis
       parameters:
         - name: id

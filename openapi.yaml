@@ -32,7 +32,6 @@ info:
           <li>Sample apps & tutorials (coming soon)</li>
         </ul>
       </li>
-      <li><a href="/openapi.yaml">OpenAPI / Swagger Specification</a></li>
       <li><a href="http://wirefreethought.com/terms-of-service">API Terms of Service</a></li>
       <li>Contact: <a href="mailto:info@mood-metrics-api.dev">info@mood-metrics-api.dev</a></li>
     </ul>

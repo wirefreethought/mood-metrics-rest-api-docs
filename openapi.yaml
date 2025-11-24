@@ -3,7 +3,7 @@ info:
   title: Mood Metrics API
   version: v1.0.0-ALPHA
   x-logo:
-    url: https://static.wixstatic.com/media/60a259_4d3b2a13b13e4edfb4efad2de8b9a8f1~mv2.png
+    url: logo.png
     backgroundColor: "#FFFFFF"
   description: |
     The Mood Metrics API provides powerful sentiment analysis on submitted text, with optional long-term tracking and anomaly detection using feed IDs. Perfect for monitoring brand perception, social media streams, customer feedback, support tickets, or real-time news sentiment.

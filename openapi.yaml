@@ -1,7 +1,10 @@
 openapi: 3.1.0
 info:
-  title: OpenAPI definition
-  version: v0
+  title: Mood Metrics API
+  version: v1.0.0-BETA
+  x-logo:
+    url: https://static.wixstatic.com/media/60a259_4d3b2a13b13e4edfb4efad2de8b9a8f1~mv2.png
+    backgroundColor: "#FFFFFF"
 servers:
   - url: 'https://free-service.mood-metrics-api.dev'
     description: Generated server url

@@ -1,7 +1,6 @@
 openapi: 3.1.0
 info:
   title: Mood Metrics API
-
   description: |
     The Mood Metrics API provides powerful sentiment analysis on submitted text, with optional long-term tracking and anomaly detection using feed IDs. Perfect for monitoring brand perception, social media streams, customer feedback, support tickets, or real-time news sentiment.
 
@@ -12,139 +11,232 @@ info:
       <li>Detect sentiment trends, sudden shifts, and anomalies across a feed</li>
       <li>Batch processing support for high-volume streams</li>
       <li>Language-agnostic – works with any UTF-8 text</li>
-      <li>RESTful design with predictable resource-oriented URLs and HATEOAS-style pagination</li>
+      <li>RESTful design with predictable resource-oriented URLs</li>
       <li>Secure, scalable, cloud-backed infrastructure</li>
     </ul>
 
-    <p><strong>Note:</strong> The API is currently in active development. Some endpoints and response fields may evolve. Historical data and trend detection features are being rolled out progressively – stay tuned for updates!</p>
+    <p><strong>Note:</strong> The API is currently in active development (v1.0.0-ALPHA). Some endpoints and response fields may evolve. Historical trend and anomaly detection features are being rolled out progressively.</p>
 
     <hr/>
 
     <h3>Useful Resources</h3>
     <ul>
-      <li>
-        SDKs & Clients
-        <ul>
-          <li>JavaScript / TypeScript (coming soon)</li>
-          <li>Sample apps & tutorials (coming soon)</li>
-        </ul>
-      </li>
       <li><a href="http://wirefreethought.com/terms-of-service">API Terms of Service</a></li>
       <li>Contact: <a href="mailto:info@mood-metrics-api.dev">info@mood-metrics-api.dev</a></li>
     </ul>
 
   version: v1.0.0-ALPHA
-
   x-logo:
     url: logo.png
     backgroundColor: "#FFFFFF"
 
 servers:
-  - url: 'https://mood-metrics.p.rapidapi.com'
+  - url: https://mood-metrics.p.rapidapi.com
+    description: Production API endpoint (via RapidAPI)
 
 security:
-- UserSecurity: []
+  - UserSecurity: []
+
+tags:
+  - name: analysis
+    description: Submit and retrieve sentiment analysis results
+  - name: job
+    description: Monitor and manage asynchronous processing jobs
 
 paths:
   /analyses:
     post:
       tags:
         - analysis
-      operationId: anazlyeText
+      summary: Submit text for sentiment analysis
+      description: |
+        Submits one or more pieces of text for sentiment analysis. Processing is asynchronous.
+        The API immediately returns a job ID. Use the job endpoints to monitor progress and retrieve results when complete.
+
+        Use the optional `feedId` field to group related texts (e.g. a brand, product, or social campaign) for historical tracking, trend analysis, and anomaly detection.
+      operationId: analyzeText
       requestBody:
+        required: true
         content:
           application/json:
             schema:
               $ref: '#/components/schemas/AnalyzeTextRequest'
-        required: true
+            examples:
+              single:
+                summary: Analyze a single piece of text
+                value:
+                  text: "I absolutely love this product! It's the best thing ever!"
+                  feedId: acme-corp-reviews
+              batch:
+                summary: Batch analysis (array of texts)
+                value:
+                  items:
+                    - text: Great service, very happy!
+                      feedId: customer-support
+                    - text: This is the worst experience I've ever had.
+                      feedId: customer-support
       responses:
         '200':
-          description: OK
+          description: Analysis job successfully created
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/WftWsResultPayloadVoid'
-  '/system/jobs/{id}/status':
+              example:
+                data:
+                  jobId: 3fa85f64-5717-4562-b3fc-2c963f66afa6
+                errors: []
+
+  /system/jobs/{id}/status:
     get:
       tags:
         - job
+      summary: Get job processing status
+      description: |
+        Returns the current status of an asynchronous job (PENDING, PROCESSING, SUCCEEDED, FAILED, CANCELED).
+        Ideal for polling when results are not immediately available.
       operationId: getJobStatus
       parameters:
         - name: id
           in: path
           required: true
+          description: UUID of the job returned when the analysis was submitted
           schema:
             type: string
             format: uuid
+          example: 3fa85f64-5717-4562-b3fc-2c963f66afa6
       responses:
         '200':
-          description: OK
+          description: Current job status
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/WftWsResultPayloadVoid'
-  '/system/jobs/{id}':
+
+  /system/jobs/{id}:
     get:
       tags:
         - job
+      summary: Get full job details
+      description: |
+        Retrieves complete job metadata including progress, status, owner, tenant, and result ID (when complete).
       operationId: getJob
       parameters:
         - name: id
           in: path
           required: true
+          description: UUID of the job
           schema:
             type: string
             format: uuid
+          example: 3fa85f64-5717-4562-b3fc-2c963f66afa6
       responses:
         '200':
-          description: OK
+          description: Full job state and metadata
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/WftWsResultSysJobStateVoid'
-  '/analyses/{id}':
+
+  /analyses/{id}:
     get:
       tags:
         - analysis
+      summary: Retrieve completed sentiment analysis result
+      description: |
+        Fetches the final sentiment analysis result using the result ID obtained from a completed job.
+        Includes overall sentiment, score, emotion breakdown, and optional rationale.
       operationId: getSentimentAnalysis
       parameters:
         - name: id
           in: path
           required: true
+          description: Result ID (UUID) from a SUCCEEDED sentiment analysis job
           schema:
             type: string
             format: uuid
+          example: a1b2c3d4-e5f6-7890-g1h2-i3j4k5l6m7n8
       responses:
         '200':
-          description: OK
+          description: Completed sentiment analysis result
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/WftWsResultSentimentAnalysisVoid'
+              example:
+                data:
+                  feedId: acme-corp-reviews
+                  sentiment: VERY_POSITIVE
+                  sentimentScore: 0.94
+                  emotionScores:
+                    - emotion: HAPPINESS
+                      score: 0.97
+                    - emotion: SURPRISE
+                      score: 0.41
+                    - emotion: NEUTRAL
+                      score: 0.02
+                  rationale: Strong positive indicators including words like 'love', 'best', 'amazing'
+                errors: []
+
 components:
   schemas:
     AnalyzeTextRequest:
       type: object
+      description: Request payload for submitting text for sentiment analysis
+      required:
+        - text
       properties:
         feedId:
           type: string
+          description: |
+            Optional identifier to group related texts. Enables long-term tracking, trend analysis,
+            and anomaly detection across all items sharing the same feedId.
+          example: twitter-brand-acme
         text:
           type: string
+          description: The text to analyze. Must be valid UTF-8. Supports all languages.
+          example: This product changed my life – highly recommend!
+        items:
+          type: array
+          description: For batch requests – array of objects with `text` and optional `feedId`
+          items:
+            type: object
+            properties:
+              text:
+                type: string
+              feedId:
+                type: string
+
     Payload:
       type: object
+      description: Contains the job ID returned after submission
       properties:
         jobId:
           type: string
+          format: uuid
+          description: Unique identifier of the created analysis job
+          example: 3fa85f64-5717-4562-b3fc-2c963f66afa6
+
     WftError:
+      type: object
       discriminator:
         propertyName: type
+      required:
+        - type
       properties:
         type:
           type: string
-      required:
-        - type
+          description: Machine-readable error identifier
+        message:
+          type: string
+          description: Human-readable error message
+        details:
+          type: object
+          description: Additional context or validation errors
+
     WftWsResultPayloadVoid:
       type: object
+      description: Standard success response containing a job ID
       properties:
         data:
           $ref: '#/components/schemas/Payload'
@@ -152,16 +244,25 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/WftError'
+
     Progress:
       type: object
       properties:
-        details: {}
+        details:
+          type: object
+          nullable: true
         percentCompleted:
           type: number
           format: double
+          minimum: 0
+          maximum: 100
         stageId:
           $ref: '#/components/schemas/Stage'
-    Stage: {}
+
+    Stage:
+      type: string
+      description: Identifier of the current processing stage
+
     SysJobState:
       type: object
       properties:
@@ -173,6 +274,7 @@ components:
         resultId:
           type: string
           format: uuid
+          description: ID to use with /analyses/{id} when status is SUCCEEDED
         owner:
           $ref: '#/components/schemas/WftMtUser'
         progressTracking:
@@ -189,6 +291,7 @@ components:
           type: string
         tenantId:
           type: string
+
     WftMtUser:
       type: object
       properties:
@@ -196,6 +299,7 @@ components:
           type: string
         userId:
           type: string
+
     WftProgressTracking:
       type: object
       properties:
@@ -205,8 +309,10 @@ components:
             $ref: '#/components/schemas/Progress'
         overallProgress:
           $ref: '#/components/schemas/Progress'
+
     WftWsResultSysJobStateVoid:
       type: object
+      description: Standard wrapper for full job details
       properties:
         data:
           $ref: '#/components/schemas/SysJobState'
@@ -214,13 +320,7 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/WftError'
-    ConversionObject:
-      type: object
-      properties:
-        logicalTypeName:
-          type: string
-        recommendedSchema:
-          $ref: '#/components/schemas/Schema'
+
     EmotionScore:
       type: object
       properties:
@@ -234,98 +334,21 @@ components:
             - SURPRISE
             - DISGUST
             - NEUTRAL
+          description: Detected primary emotion
         score:
           type: number
           format: double
-        schema:
-          $ref: '#/components/schemas/Schema'
-        specificData:
-          $ref: '#/components/schemas/SpecificData'
-    FastReaderBuilder:
-      type: object
-      properties:
-        keyClassEnabled:
-          type: boolean
-        classPropEnabled:
-          type: boolean
-    Field:
-      type: object
-      properties:
-        objectProps:
-          type: object
-          additionalProperties: {}
-    LogicalType:
-      type: object
-      properties:
-        name:
-          type: string
-    Schema:
-      type: object
-      properties:
-        type:
-          type: string
-          enum:
-            - RECORD
-            - ENUM
-            - ARRAY
-            - MAP
-            - UNION
-            - FIXED
-            - STRING
-            - BYTES
-            - INT
-            - LONG
-            - FLOAT
-            - DOUBLE
-            - BOOLEAN
-            - 'NULL'
-        logicalType:
-          $ref: '#/components/schemas/LogicalType'
-        name:
-          type: string
-        fields:
-          type: array
-          items:
-            $ref: '#/components/schemas/Field'
-        error:
-          type: boolean
-        fullName:
-          type: string
-        elementType: {}
-        aliases:
-          type: array
-          items:
-            type: string
-          uniqueItems: true
-        types:
-          type: array
-          items: {}
-        valueType: {}
-        namespace:
-          type: string
-        nullable:
-          type: boolean
-        enumSymbols:
-          type: array
-          items:
-            type: string
-        fixedSize:
-          type: integer
-          format: int32
-        union:
-          type: boolean
-        doc:
-          type: string
-        enumDefault:
-          type: string
-        objectProps:
-          type: object
-          additionalProperties: {}
+          minimum: 0
+          maximum: 1
+          description: Confidence that this emotion is present (0.0 = not present, 1.0 = strongly present)
+
     SentimentAnalysis:
       type: object
+      description: Complete result of sentiment analysis
       properties:
         feedId:
           type: string
+          description: The feedId submitted with the request (if any)
         ownerId:
           type: string
         tenantId:
@@ -342,165 +365,29 @@ components:
             - VERY_POSITIVE
             - MIXED
             - UNCERTAIN
+          description: Overall sentiment classification
         sentimentScore:
           type: number
           format: double
+          minimum: -1
+          maximum: 1
+          description: Normalized sentiment polarity score (-1.0 = very negative, +1.0 = very positive)
         emotionScores:
           type: array
+          description: Per-emotion confidence scores
           items:
             $ref: '#/components/schemas/EmotionScore'
         rationale:
           type: string
+          description: Human-readable explanation of the sentiment decision (optional)
         schema:
           $ref: '#/components/schemas/Schema'
         specificData:
           $ref: '#/components/schemas/SpecificData'
-    SpecificData:
-      type: object
-      properties:
-        classLoader:
-          type: object
-          properties:
-            name:
-              type: string
-            registeredAsParallelCapable:
-              type: boolean
-            parent:
-              type: object
-              properties:
-                name:
-                  type: string
-                registeredAsParallelCapable:
-                  type: boolean
-                unnamedModule:
-                  type: object
-                  properties:
-                    name:
-                      type: string
-                    descriptor:
-                      type: object
-                      properties:
-                        open:
-                          type: boolean
-                        automatic:
-                          type: boolean
-                    named:
-                      type: boolean
-                    annotations:
-                      type: array
-                      items: {}
-                    declaredAnnotations:
-                      type: array
-                      items: {}
-                    packages:
-                      type: array
-                      items:
-                        type: string
-                      uniqueItems: true
-                    nativeAccessEnabled:
-                      type: boolean
-                    layer: {}
-                definedPackages:
-                  type: array
-                  items:
-                    type: object
-                    properties:
-                      name:
-                        type: string
-                      annotations:
-                        type: array
-                        items: {}
-                      declaredAnnotations:
-                        type: array
-                        items: {}
-                      sealed:
-                        type: boolean
-                      specificationTitle:
-                        type: string
-                      specificationVersion:
-                        type: string
-                      specificationVendor:
-                        type: string
-                      implementationTitle:
-                        type: string
-                      implementationVersion:
-                        type: string
-                      implementationVendor:
-                        type: string
-                defaultAssertionStatus:
-                  type: boolean
-                  writeOnly: true
-            unnamedModule:
-              type: object
-              properties:
-                name:
-                  type: string
-                descriptor:
-                  type: object
-                  properties:
-                    open:
-                      type: boolean
-                    automatic:
-                      type: boolean
-                named:
-                  type: boolean
-                annotations:
-                  type: array
-                  items: {}
-                declaredAnnotations:
-                  type: array
-                  items: {}
-                packages:
-                  type: array
-                  items:
-                    type: string
-                  uniqueItems: true
-                nativeAccessEnabled:
-                  type: boolean
-                layer: {}
-            definedPackages:
-              type: array
-              items:
-                type: object
-                properties:
-                  name:
-                    type: string
-                  annotations:
-                    type: array
-                    items: {}
-                  declaredAnnotations:
-                    type: array
-                    items: {}
-                  sealed:
-                    type: boolean
-                  specificationTitle:
-                    type: string
-                  specificationVersion:
-                    type: string
-                  specificationVendor:
-                    type: string
-                  implementationTitle:
-                    type: string
-                  implementationVersion:
-                    type: string
-                  implementationVendor:
-                    type: string
-            defaultAssertionStatus:
-              type: boolean
-              writeOnly: true
-        conversions:
-          type: array
-          items:
-            $ref: '#/components/schemas/ConversionObject'
-        fastReaderEnabled:
-          type: boolean
-        fastReaderBuilder:
-          $ref: '#/components/schemas/FastReaderBuilder'
-        customCoders:
-          type: boolean
-          writeOnly: true
+
     WftWsResultSentimentAnalysisVoid:
       type: object
+      description: Standard wrapper for a completed sentiment analysis result
       properties:
         data:
           $ref: '#/components/schemas/SentimentAnalysis'
@@ -509,9 +396,18 @@ components:
           items:
             $ref: '#/components/schemas/WftError'
 
+    Schema:
+      type: object
+      properties: {}
+    SpecificData:
+      type: object
+      properties: {}
+
   securitySchemes:
     UserSecurity:
+      type: apiKey
       in: header
       name: X-RapidAPI-Key
-      type: apiKey
-
+      description: >-
+        Your personal RapidAPI key (required in the X-RapidAPI-Key header).
+        Get your key at https://rapidapi.com/mood-metrics-api

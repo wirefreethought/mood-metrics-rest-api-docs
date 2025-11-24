@@ -1,7 +1,7 @@
 openapi: 3.1.0
 info:
   title: Mood Metrics API
-  version: v1.0.0-BETA
+  version: v1.0.0-ALPHA
   x-logo:
     url: https://static.wixstatic.com/media/60a259_4d3b2a13b13e4edfb4efad2de8b9a8f1~mv2.png
     backgroundColor: "#FFFFFF"

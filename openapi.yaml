@@ -37,7 +37,7 @@ info:
     </ul>
 servers:
   - url: 'https://free-service.mood-metrics-api.dev'
-    description: Generated server url
+  - url: 'https://mood-metrics.p.rapidapi.com'
 paths:
   /analyses:
     post:

@@ -73,7 +73,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/WftWsResultPayloadVoid'
+                $ref: '#/components/schemas/WftWsResultPayloadSentimentAnalysisJobMetadata'
               example:
                 data:
                   jobId: 3fa85f64-5717-4562-b3fc-2c963f66afa6
@@ -104,31 +104,6 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/WftWsResultPayloadVoid'
-
-  /system/jobs/{id}:
-    get:
-      tags:
-        - job
-      summary: Get full job details
-      description: |
-        Retrieves complete job metadata including progress, status, owner, tenant, and result ID (when complete).
-      operationId: getJob
-      parameters:
-        - name: id
-          in: path
-          required: true
-          description: UUID of the job
-          schema:
-            type: string
-            format: uuid
-          example: 3fa85f64-5717-4562-b3fc-2c963f66afa6
-      responses:
-        '200':
-          description: Full job state and metadata
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/WftWsResultSysJobStateVoid'
 
   /analyses/{id}:
     get:
@@ -227,81 +202,17 @@ components:
           items:
             $ref: '#/components/schemas/WftError'
 
-    Progress:
+    WftWsResultPayloadSentimentAnalysisJobMetadata:
       type: object
-      properties:
-        details:
-          type: object
-          nullable: true
-        percentCompleted:
-          type: number
-          format: double
-          minimum: 0
-          maximum: 100
-        stageId:
-          $ref: '#/components/schemas/Stage'
-
-    Stage:
-      type: string
-      description: Identifier of the current processing stage
-
-    SysJobState:
-      type: object
-      properties:
-        id:
-          type: string
-          format: uuid
-        type:
-          type: string
-        resultId:
-          type: string
-          format: uuid
-          description: ID to use with /analyses/{id} when status is SUCCEEDED
-        owner:
-          $ref: '#/components/schemas/WftMtUser'
-        progressTracking:
-          $ref: '#/components/schemas/WftProgressTracking'
-        status:
-          type: string
-          enum:
-            - CANCELED
-            - FAILED
-            - PENDING
-            - PROCESSING
-            - SUCCEEDED
-        ownerId:
-          type: string
-        tenantId:
-          type: string
-
-    WftMtUser:
-      type: object
-      properties:
-        tenantId:
-          type: string
-        userId:
-          type: string
-
-    WftProgressTracking:
-      type: object
-      properties:
-        progressStack:
-          type: array
-          items:
-            $ref: '#/components/schemas/Progress'
-        overallProgress:
-          $ref: '#/components/schemas/Progress'
-
-    WftWsResultSysJobStateVoid:
-      type: object
-      description: Standard wrapper for full job details
       properties:
         data:
-          $ref: '#/components/schemas/SysJobState'
+          $ref: '#/components/schemas/Payload'
         errors:
           type: array
           items:
             $ref: '#/components/schemas/WftError'
+        metadata:
+          $ref: '#/components/schemas/SentimentAnalysisJobMetadata'
 
     EmotionScore:
       type: object

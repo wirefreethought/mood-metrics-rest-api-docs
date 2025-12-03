@@ -7,15 +7,12 @@ info:
     <ul>
       <li>Instant sentiment classification: <strong>positive</strong>, <strong>negative</strong>, or <strong>neutral</strong></li>
       <li>Confidence scores (0.0 – 1.0) for each primary emotion</li>
-      <li>Track sentiment over time by associating text with a custom <code>feedId</code></li>
-      <li>Detect sentiment trends, sudden shifts, and anomalies across a feed</li>
-      <li>Batch processing support for high-volume streams</li>
+      <li>Track sentiment over time</li>
+      <li>Detect sentiment trends/li>
       <li>Language-agnostic – works with any UTF-8 text</li>
       <li>RESTful design with predictable resource-oriented URLs</li>
       <li>Secure, scalable, cloud-backed infrastructure</li>
     </ul>
-
-    <p><strong>Note:</strong> The API is currently in active development (v1.0.0-ALPHA). Some endpoints and response fields may evolve. Historical trend and anomaly detection features are being rolled out progressively.</p>
 
     <hr/>
 
@@ -52,8 +49,6 @@ paths:
       description: |
         Submits one or more pieces of text for sentiment analysis. Processing is asynchronous.
         The API immediately returns a job ID. Use the job endpoints to monitor progress and retrieve results when complete.
-
-        Use the optional `feedId` field to group related texts (e.g. a brand, product, or social campaign) for historical tracking, trend analysis, and anomaly detection.
       operationId: analyzeText
       requestBody:
         required: true
@@ -86,7 +81,7 @@ paths:
       summary: Get job processing status
       description: |
         Returns the current status of an asynchronous job (PENDING, PROCESSING, SUCCEEDED, FAILED, CANCELED).
-        Ideal for polling when results are not immediately available.
+        On success, also returns the result ID.
       operationId: getJobStatus
       parameters:
         - name: id
@@ -112,7 +107,7 @@ paths:
       summary: Retrieve completed sentiment analysis result
       description: |
         Fetches the final sentiment analysis result using the result ID obtained from a completed job.
-        Includes overall sentiment, score, emotion breakdown, and optional rationale.
+        Includes overall sentiment, score, emotion breakdown, and rationale.
       operationId: getSentimentAnalysis
       parameters:
         - name: id
@@ -242,10 +237,6 @@ components:
         feedId:
           type: string
           description: The feedId submitted with the request (if any)
-        ownerId:
-          type: string
-        tenantId:
-          type: string
         sentiment:
           type: string
           enum:

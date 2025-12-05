@@ -294,4 +294,4 @@ components:
       name: X-RapidAPI-Key
       description: >-
         Your personal RapidAPI key (required in the X-RapidAPI-Key header).
-        Get your key at https://rapidapi.com/mood-metrics-api
+        Get your key at https://rapidapi.com/wirefreethought/api/mood-metrics

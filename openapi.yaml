@@ -22,7 +22,7 @@ info:
       <li>Contact: <a href="mailto:info@mood-metrics-api.dev">info@mood-metrics-api.dev</a></li>
     </ul>
 
-  version: v1.0.0-ALPHA
+  version: v1.0.0
   x-logo:
     url: logo.png
     backgroundColor: "#FFFFFF"

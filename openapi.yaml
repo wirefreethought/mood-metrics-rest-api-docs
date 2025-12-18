@@ -49,7 +49,7 @@ paths:
       description: |
         Submits text for sentiment analysis.
 
-        Behavior is controlled by the optional **X-WFT-Async-Mode** header:
+        Behavior is controlled by the **X-WFT-Async-Mode** header:
 
         - `true` (default): Processing is asynchronous. The API immediately returns a job ID. Use the job endpoints to monitor progress and retrieve results when complete.
         - `false`: Processing is synchronous. The API waits for the analysis to complete and returns the final sentiment analysis result in the same shape as `GET /analyses/{id}`.

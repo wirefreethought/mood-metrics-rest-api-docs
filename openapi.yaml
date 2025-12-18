@@ -47,9 +47,25 @@ paths:
         - analysis
       summary: Submit text for sentiment analysis
       description: |
-        Submits one or more pieces of text for sentiment analysis. Processing is asynchronous.
-        The API immediately returns a job ID. Use the job endpoints to monitor progress and retrieve results when complete.
+        Submits text for sentiment analysis.
+
+        Behavior is controlled by the optional **X-WFT-Async-Mode** header:
+
+        - `true` (default): Processing is asynchronous. The API immediately returns a job ID. Use the job endpoints to monitor progress and retrieve results when complete.
+        - `false`: Processing is synchronous. The API waits for the analysis to complete and returns the final sentiment analysis result in the same shape as `GET /analyses/{id}`.
       operationId: analyzeText
+      parameters:
+        - name: X-WFT-Async-Mode
+          in: header
+          required: true
+          description: |
+            Controls whether analysis is processed asynchronously (job-based) or synchronously.
+
+            - `true`: Return current job metadata (jobId).
+            - `false`: Block until analysis completes and return the final sentiment analysis result.
+          schema:
+            type: boolean
+          example: true
       requestBody:
         required: true
         content:
@@ -58,47 +74,42 @@ paths:
               $ref: '#/components/schemas/AnalyzeTextRequest'
             examples:
               single:
-                summary: Analyze a single piece of text
+                summary: Analyze a single piece of text (async)
                 value:
                   text: "I absolutely love this product! It's the best thing ever!"
                   feedId: acme-corp-reviews
       responses:
         '200':
-          description: Analysis job successfully created
+          description: Analysis job created or completed result returned, depending on async mode
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/WftWsResultPayloadSentimentAnalysisJobMetadata'
-              example:
-                data:
-                  jobId: 3fa85f64-5717-4562-b3fc-2c963f66afa6
-                errors: []
-
-  /system/jobs/{id}/status:
-    get:
-      tags:
-        - job
-      summary: Get job processing status
-      description: |
-        Returns the current status of an asynchronous job (PENDING, PROCESSING, SUCCEEDED, FAILED, CANCELED).
-        On success, also returns the result ID.
-      operationId: getJobStatus
-      parameters:
-        - name: id
-          in: path
-          required: true
-          description: UUID of the job returned when the analysis was submitted
-          schema:
-            type: string
-            format: uuid
-          example: 3fa85f64-5717-4562-b3fc-2c963f66afa6
-      responses:
-        '200':
-          description: Current job status
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/WftWsResultPayloadVoid'
+                oneOf:
+                  - $ref: '#/components/schemas/WftWsResultPayloadSentimentAnalysisJobMetadata'
+                  - $ref: '#/components/schemas/WftWsResultSentimentAnalysisVoid'
+              examples:
+                async:
+                  summary: Asynchronous mode (X-WFT-Async-Mode=true or omitted)
+                  value:
+                    data:
+                      jobId: 3fa85f64-5717-4562-b3fc-2c963f66afa6
+                    errors: []
+                sync:
+                  summary: Synchronous mode (X-WFT-Async-Mode=false)
+                  value:
+                    data:
+                      feedId: acme-corp-reviews
+                      sentiment: VERY_POSITIVE
+                      sentimentScore: 0.94
+                      emotionScores:
+                        - emotion: HAPPINESS
+                          score: 0.97
+                        - emotion: SURPRISE
+                          score: 0.41
+                        - emotion: NEUTRAL
+                          score: 0.02
+                      rationale: Strong positive indicators including words like 'love', 'best', 'amazing'
+                    errors: []
 
   /analyses/{id}:
     get:
@@ -139,6 +150,32 @@ paths:
                       score: 0.02
                   rationale: Strong positive indicators including words like 'love', 'best', 'amazing'
                 errors: []
+
+  /system/jobs/{id}/status:
+    get:
+      tags:
+        - job
+      summary: Get job processing status
+      description: |
+        Returns the current status of an asynchronous job (PENDING, PROCESSING, SUCCEEDED, FAILED, CANCELED).
+        On success, also returns the result ID.
+      operationId: getJobStatus
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: UUID of the job returned when the analysis was submitted
+          schema:
+            type: string
+            format: uuid
+          example: 3fa85f64-5717-4562-b3fc-2c963f66afa6
+      responses:
+        '200':
+          description: Current job status
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/WftWsResultPayloadVoid'
 
 components:
   schemas:

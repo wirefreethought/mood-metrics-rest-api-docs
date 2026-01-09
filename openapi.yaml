@@ -37,6 +37,8 @@ security:
 tags:
   - name: analysis
     description: Submit and retrieve sentiment analysis results
+  - name: encryption
+    description: Provide encryption info
   - name: job
     description: Monitor and manage asynchronous processing jobs
 
@@ -177,6 +179,45 @@ paths:
               schema:
                 $ref: '#/components/schemas/WftWsResultPayloadVoid'
 
+  /system/encryption/info/public-key.pem:
+    get:
+      tags:
+        - encryption
+      operationId: getPublicKeyPem
+      responses:
+        '200':
+          description: OK
+          content:
+            text/plain:
+              schema:
+                type: string
+
+  /system/encryption/info/certificate.pem:
+    get:
+      tags:
+        - encryption
+      operationId: getCertificatePem
+      responses:
+        '200':
+          description: OK
+          content:
+            text/plain:
+              schema:
+                type: string
+
+  /system/encryption/info:
+    get:
+      tags:
+        - encryption
+      operationId: getEncryptionInfo
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/WftWsResultPublicKeyInfoVoid'
+
 components:
   schemas:
     AnalyzeTextRequest:
@@ -205,6 +246,19 @@ components:
           format: uuid
           description: Unique identifier of the created analysis job
           example: 3fa85f64-5717-4562-b3fc-2c963f66afa6
+
+    PublicKeyInfo:
+      type: object
+      properties:
+        certificatePem:
+          type: string
+        keyPem:
+          type: string
+        fingerprintSha256:
+          type: string
+        expires:
+          type: string
+          format: date-time
 
     WftError:
       type: object
@@ -246,6 +300,17 @@ components:
         metadata:
           $ref: '#/components/schemas/SentimentAnalysisJobMetadata'
 
+    WftWsResultPublicKeyInfoVoid:
+      type: object
+      properties:
+        data:
+          $ref: '#/components/schemas/PublicKeyInfo'
+        errors:
+          type: array
+          items:
+            $ref: '#/components/schemas/WftError'
+        metadata: {}
+
     EmotionScore:
       type: object
       properties:
@@ -274,6 +339,19 @@ components:
         feedId:
           type: string
           description: The feedId submitted with the request (if any)
+        intent:
+          type: string
+          enum:
+            - COMPLAINT
+            - PRAISE
+            - INQUIRY
+            - SUGGESTION
+            - REQUEST
+            - NEUTRAL
+            - UNKNOWN
+        intentScore:
+          type: number
+          format: double
         sentiment:
           type: string
           enum:

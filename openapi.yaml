@@ -227,6 +227,16 @@ components:
       required:
         - text
       properties:
+        domain:
+          type: string
+          enum:
+            - GENERAL
+            - FINANCIAL_NEWS
+          description: |
+            Optional. Selects the sentiment analysis model and output format.
+            - `GENERAL` (default): Full analysis including sentiment label, confidence score, primary emotions, rationale, and intent signals. Suitable for social media, reviews, support tickets, etc.
+            - `FINANCIAL_NEWS`: Polarity-only output optimized for market tone (e.g. "beat estimates", "downgrade"). Returns **only** `sentimentLabel` and `confidence`. No emotions, rationale, or intent are included.
+            Omitted → defaults to `GENERAL`.
         feedId:
           type: string
           description: |

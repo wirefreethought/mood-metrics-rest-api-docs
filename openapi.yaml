@@ -40,6 +40,8 @@ tags:
     description: Provide encryption info
   - name: job
     description: Monitor and manage asynchronous processing jobs
+  - name: feed-controller
+    description: Create, retrieve, update, and manage sentiment analysis feeds and their associated analyses
 
 paths:
   /analyses:
@@ -54,19 +56,15 @@ paths:
 
         - `true` (default): Processing is asynchronous. The API immediately returns a job ID. Use the job endpoints to monitor progress and retrieve results when complete.
         - `false`: Processing is synchronous. The API waits for the analysis to complete and returns the final sentiment analysis result in the same shape as `GET /analyses/{id}`.
-      operationId: analyzeText
+      operationId: analyzeTextAsync
       parameters:
         - name: X-WFT-Async-Mode
           in: header
-          required: true
-          description: |
-            Controls whether analysis is processed asynchronously (job-based) or synchronously.
-
-            - `true`: Return current job metadata (jobId).
-            - `false`: Block until analysis completes and return the final sentiment analysis result.
+          description: Controls whether the request is processed asynchronously (`true`, default) or synchronously (`false`).
           schema:
-            type: boolean
-          example: true
+            type: string
+            enum:
+              - 'true'
       requestBody:
         required: true
         content:
@@ -86,8 +84,8 @@ paths:
             application/json:
               schema:
                 oneOf:
-                  - $ref: '#/components/schemas/WftWsResultPayloadSentimentAnalysisJobMetadata'
                   - $ref: '#/components/schemas/WftWsResultSentimentAnalysisVoid'
+                  - $ref: '#/components/schemas/WftWsResultPayloadSentimentAnalysisJobMetadata'
               examples:
                 async:
                   summary: Asynchronous mode (X-WFT-Async-Mode=true or omitted)
@@ -130,7 +128,6 @@ paths:
           description: Result ID (UUID) from a SUCCEEDED sentiment analysis job
           schema:
             type: string
-            format: uuid
           example: a1b2c3d4-e5f6-7890-g1h2-i3j4k5l6m7n8
       responses:
         '200':
@@ -154,6 +151,613 @@ paths:
                   rationale: Strong positive indicators including words like 'love', 'best', 'amazing'
                 errors: []
 
+  /user-feeds:
+    post:
+      tags:
+        - feed-controller
+      summary: Create a new user feed
+      description: |
+        Creates a new user-scoped sentiment analysis feed. Feeds allow you to group related analyses
+        together for long-term tracking, trend analysis, and anomaly detection.
+      operationId: createUserFeed
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateFeedRequest'
+            examples:
+              basic:
+                summary: Create a feed for tracking brand reviews
+                value:
+                  name: acme-product-reviews
+                  description: Sentiment tracking for Acme Corp product reviews
+                  maxSize: 1000
+      responses:
+        '200':
+          description: User feed created successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/WftWsResultSentimentAnalysisFeedVoid'
+              example:
+                data:
+                  id: f1a2b3c4-d5e6-7890-abcd-ef1234567890
+                  name: acme-product-reviews
+                  description: Sentiment tracking for Acme Corp product reviews
+                  size: 0
+                  maxSize: 1000
+                errors: []
+
+  /user-feeds/{id}:
+    get:
+      tags:
+        - feed-controller
+      summary: Retrieve a user feed
+      description: |
+        Fetches the details of a user-scoped feed by its ID, including name, description, current size, and maximum size.
+      operationId: getUserFeed
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: Unique identifier (UUID) of the user feed
+          schema:
+            type: string
+          example: f1a2b3c4-d5e6-7890-abcd-ef1234567890
+      responses:
+        '200':
+          description: User feed details
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/WftWsResultSentimentAnalysisFeedVoid'
+              example:
+                data:
+                  id: f1a2b3c4-d5e6-7890-abcd-ef1234567890
+                  name: acme-product-reviews
+                  description: Sentiment tracking for Acme Corp product reviews
+                  size: 42
+                  maxSize: 1000
+                errors: []
+    put:
+      tags:
+        - feed-controller
+      summary: Update a user feed
+      description: |
+        Updates the mutable properties of a user-scoped feed. Currently supports updating the feed description.
+      operationId: updateUserFeed
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: Unique identifier (UUID) of the user feed to update
+          schema:
+            type: string
+          example: f1a2b3c4-d5e6-7890-abcd-ef1234567890
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateFeedRequest'
+            examples:
+              updateDescription:
+                summary: Update the feed description
+                value:
+                  description: Updated sentiment tracking for Acme Corp product reviews (Q2 2025)
+      responses:
+        '200':
+          description: User feed updated successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/WftWsResultSentimentAnalysisFeedVoid'
+              example:
+                data:
+                  id: f1a2b3c4-d5e6-7890-abcd-ef1234567890
+                  name: acme-product-reviews
+                  description: Updated sentiment tracking for Acme Corp product reviews (Q2 2025)
+                  size: 42
+                  maxSize: 1000
+                errors: []
+
+  /user-feeds/{id}/analyses:
+    get:
+      tags:
+        - feed-controller
+      summary: List analyses for a user feed
+      description: |
+        Returns a paginated list of sentiment analysis results associated with the specified user feed.
+        Supports pagination via `limit` and `offset`, and sorting via the `sort` parameter.
+      operationId: getUserFeedAnalyses
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: Unique identifier (UUID) of the user feed
+          schema:
+            type: string
+          example: f1a2b3c4-d5e6-7890-abcd-ef1234567890
+        - name: limit
+          in: query
+          required: false
+          description: Maximum number of results to return per page
+          schema:
+            type: integer
+            format: int64
+            default: 5
+          example: 10
+        - name: offset
+          in: query
+          required: false
+          description: Number of results to skip before returning (for pagination)
+          schema:
+            type: integer
+            format: int64
+            default: 0
+          example: 0
+        - name: sort
+          in: query
+          required: false
+          description: Sort order for results (e.g., `sentimentScore,desc`)
+          schema:
+            type: string
+          example: sentimentScore,desc
+      responses:
+        '200':
+          description: Paginated list of sentiment analysis results for the user feed
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/WftWsResultPageListSentimentAnalysis'
+              example:
+                data:
+                  - id: a1b2c3d4-e5f6-7890-g1h2-i3j4k5l6m7n8
+                    feedId: acme-product-reviews
+                    sentiment: VERY_POSITIVE
+                    sentimentScore: 0.94
+                    emotionScores:
+                      - emotion: HAPPINESS
+                        score: 0.97
+                    rationale: Strong positive indicators
+                  - id: b2c3d4e5-f6a7-8901-h2i3-j4k5l6m7n8o9
+                    feedId: acme-product-reviews
+                    sentiment: NEGATIVE
+                    sentimentScore: -0.65
+                    emotionScores:
+                      - emotion: ANGER
+                        score: 0.72
+                    rationale: Negative language detected
+                errors: []
+                metadata:
+                  currentOffset: 0
+                  totalCount: 42
+    post:
+      tags:
+        - analysis-controller
+      summary: Submit text for analysis within a user feed
+      description: |
+        Submits text for sentiment analysis and associates the result with the specified user feed.
+
+        Behavior is controlled by the **X-WFT-Async-Mode** header:
+
+        - `true` (default): Processing is asynchronous. The API immediately returns a job ID.
+        - `false`: Processing is synchronous. The API waits for the analysis to complete and returns the final result.
+      operationId: analyzeTextForUserFeedAsync
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: Unique identifier (UUID) of the user feed to associate the analysis with
+          schema:
+            type: string
+          example: f1a2b3c4-d5e6-7890-abcd-ef1234567890
+        - name: X-WFT-Async-Mode
+          in: header
+          description: Controls whether the request is processed asynchronously (`true`, default) or synchronously (`false`).
+          schema:
+            type: string
+            enum:
+              - 'true'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AnalyzeTextRequest'
+            examples:
+              feedAnalysis:
+                summary: Analyze text within a user feed
+                value:
+                  text: "The customer support was unhelpful and rude."
+      responses:
+        '200':
+          description: Analysis job created or completed result returned, depending on async mode
+          content:
+            application/json:
+              schema:
+                oneOf:
+                  - $ref: '#/components/schemas/WftWsResultSentimentAnalysisVoid'
+                  - $ref: '#/components/schemas/WftWsResultPayloadSentimentAnalysisJobMetadata'
+              examples:
+                async:
+                  summary: Asynchronous mode (X-WFT-Async-Mode=true or omitted)
+                  value:
+                    data:
+                      jobId: 4ab95f64-6817-4562-c3fc-3d963f77bfb7
+                    errors: []
+                sync:
+                  summary: Synchronous mode (X-WFT-Async-Mode=false)
+                  value:
+                    data:
+                      feedId: acme-product-reviews
+                      intent: COMPLAINT
+                      intentScore: 0.88
+                      sentiment: NEGATIVE
+                      sentimentScore: -0.78
+                      emotionScores:
+                        - emotion: ANGER
+                          score: 0.82
+                        - emotion: DISGUST
+                          score: 0.45
+                      rationale: Negative indicators including 'unhelpful' and 'rude'
+                    errors: []
+
+  /user-feeds/{id}/analyses/{analysisId}:
+    delete:
+      tags:
+        - feed-controller
+      summary: Delete an analysis from a user feed
+      description: |
+        Removes a specific sentiment analysis result from the specified user feed. This operation is irreversible.
+      operationId: deleteUserFeedAnalysis
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: Unique identifier (UUID) of the user feed
+          schema:
+            type: string
+          example: f1a2b3c4-d5e6-7890-abcd-ef1234567890
+        - name: analysisId
+          in: path
+          required: true
+          description: Unique identifier (UUID) of the analysis result to delete
+          schema:
+            type: string
+          example: a1b2c3d4-e5f6-7890-g1h2-i3j4k5l6m7n8
+      responses:
+        '200':
+          description: Analysis deleted successfully
+          content:
+            '*/*':
+              schema:
+                type: object
+              example: {}
+
+  /platform-feeds:
+    post:
+      tags:
+        - feed-controller
+      summary: Create a new platform feed
+      description: |
+        Creates a new platform-scoped sentiment analysis feed. Platform feeds are shared across users
+        and are suitable for organization-wide tracking of sentiment streams.
+      operationId: createPlatformFeed
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateFeedRequest'
+            examples:
+              basic:
+                summary: Create a platform feed for social media monitoring
+                value:
+                  name: twitter-brand-mentions
+                  description: Platform-wide sentiment tracking for Twitter brand mentions
+                  maxSize: 5000
+      responses:
+        '200':
+          description: Platform feed created successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/WftWsResultSentimentAnalysisFeedVoid'
+              example:
+                data:
+                  id: c3d4e5f6-a7b8-9012-cdef-ab1234567890
+                  name: twitter-brand-mentions
+                  description: Platform-wide sentiment tracking for Twitter brand mentions
+                  size: 0
+                  maxSize: 5000
+                errors: []
+
+  /platform-feeds/{id}:
+    get:
+      tags:
+        - feed-controller
+      summary: Retrieve a platform feed
+      description: |
+        Fetches the details of a platform-scoped feed by its ID, including name, description, current size, and maximum size.
+      operationId: getPlatformFeed
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: Unique identifier (UUID) of the platform feed
+          schema:
+            type: string
+          example: c3d4e5f6-a7b8-9012-cdef-ab1234567890
+      responses:
+        '200':
+          description: Platform feed details
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/WftWsResultSentimentAnalysisFeedVoid'
+              example:
+                data:
+                  id: c3d4e5f6-a7b8-9012-cdef-ab1234567890
+                  name: twitter-brand-mentions
+                  description: Platform-wide sentiment tracking for Twitter brand mentions
+                  size: 128
+                  maxSize: 5000
+                errors: []
+    put:
+      tags:
+        - feed-controller
+      summary: Update a platform feed
+      description: |
+        Updates the mutable properties of a platform-scoped feed. Currently supports updating the feed description.
+      operationId: updatePlatformFeed
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: Unique identifier (UUID) of the platform feed to update
+          schema:
+            type: string
+          example: c3d4e5f6-a7b8-9012-cdef-ab1234567890
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateFeedRequest'
+            examples:
+              updateDescription:
+                summary: Update the platform feed description
+                value:
+                  description: Updated platform-wide tracking for Twitter brand mentions (includes retweets)
+      responses:
+        '200':
+          description: Platform feed updated successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/WftWsResultSentimentAnalysisFeedVoid'
+              example:
+                data:
+                  id: c3d4e5f6-a7b8-9012-cdef-ab1234567890
+                  name: twitter-brand-mentions
+                  description: Updated platform-wide tracking for Twitter brand mentions (includes retweets)
+                  size: 128
+                  maxSize: 5000
+                errors: []
+
+  /platform-feeds/{id}/analyses:
+    get:
+      tags:
+        - feed-controller
+      summary: List analyses for a platform feed
+      description: |
+        Returns a paginated list of sentiment analysis results associated with the specified platform feed.
+        Supports pagination via `limit` and `offset`, and sorting via the `sort` parameter.
+      operationId: getPlatformFeedAnalyses
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: Unique identifier (UUID) of the platform feed
+          schema:
+            type: string
+          example: c3d4e5f6-a7b8-9012-cdef-ab1234567890
+        - name: limit
+          in: query
+          required: false
+          description: Maximum number of results to return per page
+          schema:
+            type: integer
+            format: int64
+            default: 5
+          example: 10
+        - name: offset
+          in: query
+          required: false
+          description: Number of results to skip before returning (for pagination)
+          schema:
+            type: integer
+            format: int64
+            default: 0
+          example: 0
+        - name: sort
+          in: query
+          required: false
+          description: Sort order for results (e.g., `sentimentScore,desc`)
+          schema:
+            type: string
+          example: sentimentScore,desc
+      responses:
+        '200':
+          description: Paginated list of sentiment analysis results for the platform feed
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/WftWsResultPageListSentimentAnalysis'
+              example:
+                data:
+                  - id: d4e5f6a7-b8c9-0123-defg-bc2345678901
+                    feedId: twitter-brand-mentions
+                    sentiment: POSITIVE
+                    sentimentScore: 0.72
+                    emotionScores:
+                      - emotion: HAPPINESS
+                        score: 0.68
+                    rationale: Generally positive tone with brand endorsement language
+                  - id: e5f6a7b8-c9d0-1234-efgh-cd3456789012
+                    feedId: twitter-brand-mentions
+                    sentiment: NEUTRAL
+                    sentimentScore: 0.05
+                    emotionScores:
+                      - emotion: ANTICIPATION
+                        score: 0.35
+                    rationale: Factual mention with no strong sentiment indicators
+                errors: []
+                metadata:
+                  currentOffset: 0
+                  totalCount: 128
+    post:
+      tags:
+        - analysis-controller
+      summary: Submit text for analysis within a platform feed
+      description: |
+        Submits text for sentiment analysis and associates the result with the specified platform feed.
+
+        Behavior is controlled by the **X-WFT-Async-Mode** header:
+
+        - `true` (default): Processing is asynchronous. The API immediately returns a job ID.
+        - `false`: Processing is synchronous. The API waits for the analysis to complete and returns the final result.
+      operationId: analyzeTextForPlatformFeedAsync
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: Unique identifier (UUID) of the platform feed to associate the analysis with
+          schema:
+            type: string
+          example: c3d4e5f6-a7b8-9012-cdef-ab1234567890
+        - name: X-WFT-Async-Mode
+          in: header
+          description: Controls whether the request is processed asynchronously (`true`, default) or synchronously (`false`).
+          schema:
+            type: string
+            enum:
+              - 'true'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AnalyzeTextRequest'
+            examples:
+              feedAnalysis:
+                summary: Analyze text within a platform feed
+                value:
+                  text: "Just tried the new release – smooth experience overall, impressed with the speed improvements."
+      responses:
+        '200':
+          description: Analysis job created or completed result returned, depending on async mode
+          content:
+            application/json:
+              schema:
+                oneOf:
+                  - $ref: '#/components/schemas/WftWsResultSentimentAnalysisVoid'
+                  - $ref: '#/components/schemas/WftWsResultPayloadSentimentAnalysisJobMetadata'
+              examples:
+                async:
+                  summary: Asynchronous mode (X-WFT-Async-Mode=true or omitted)
+                  value:
+                    data:
+                      jobId: 5bc06a75-7928-5673-d4gd-4ea74g88cgc8
+                    errors: []
+                sync:
+                  summary: Synchronous mode (X-WFT-Async-Mode=false)
+                  value:
+                    data:
+                      feedId: twitter-brand-mentions
+                      intent: PRAISE
+                      intentScore: 0.82
+                      sentiment: POSITIVE
+                      sentimentScore: 0.76
+                      emotionScores:
+                        - emotion: HAPPINESS
+                          score: 0.71
+                        - emotion: SURPRISE
+                          score: 0.38
+                      rationale: Positive language including 'smooth', 'impressed', 'improvements'
+                    errors: []
+
+  /platform-feeds/{id}/analyses/{analysisId}:
+    delete:
+      tags:
+        - feed-controller
+      summary: Delete an analysis from a platform feed
+      description: |
+        Removes a specific sentiment analysis result from the specified platform feed. This operation is irreversible.
+      operationId: deletePlatformFeedAnalysis
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: Unique identifier (UUID) of the platform feed
+          schema:
+            type: string
+          example: c3d4e5f6-a7b8-9012-cdef-ab1234567890
+        - name: analysisId
+          in: path
+          required: true
+          description: Unique identifier (UUID) of the analysis result to delete
+          schema:
+            type: string
+          example: d4e5f6a7-b8c9-0123-defg-bc2345678901
+      responses:
+        '200':
+          description: Analysis deleted successfully
+          content:
+            '*/*':
+              schema:
+                type: object
+              example: {}
+
+  /system/jobs/{id}:
+    get:
+      tags:
+        - sys-job-controller
+      summary: Retrieve full job details
+      description: |
+        Returns the complete state of an asynchronous job, including status, owner information,
+        progress tracking, and result ID (if the job has succeeded).
+      operationId: getJob
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: UUID of the job returned when the analysis was submitted
+          schema:
+            type: string
+          example: 3fa85f64-5717-4562-b3fc-2c963f66afa6
+      responses:
+        '200':
+          description: Full job state details
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/WftWsResultSysJobStateVoid'
+              example:
+                data:
+                  type: SENTIMENT_ANALYSIS
+                  resultId: a1b2c3d4-e5f6-7890-g1h2-i3j4k5l6m7n8
+                  status: SUCCEEDED
+                  owner:
+                    tenantId: tenant-001
+                    userId: user-abc
+                  progressTracking:
+                    overallProgress:
+                      percentCompleted: 100.0
+                errors: []
+
   /system/jobs/{id}/status:
     get:
       tags:
@@ -170,7 +774,6 @@ paths:
           description: UUID of the job returned when the analysis was submitted
           schema:
             type: string
-            format: uuid
           example: 3fa85f64-5717-4562-b3fc-2c963f66afa6
       responses:
         '200':
@@ -179,45 +782,85 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/WftWsResultPayloadVoid'
+              examples:
+                pending:
+                  summary: Job is still pending
+                  value:
+                    data:
+                      jobId: 3fa85f64-5717-4562-b3fc-2c963f66afa6
+                    errors: []
+                succeeded:
+                  summary: Job has completed successfully
+                  value:
+                    data:
+                      jobId: 3fa85f64-5717-4562-b3fc-2c963f66afa6
+                    errors: []
 
   /system/encryption/info/public-key.pem:
     get:
       tags:
         - encryption
+      summary: Download the public key in PEM format
+      description: |
+        Returns the platform's current RSA public key in PEM-encoded format. Use this key to encrypt
+        sensitive payloads before submitting them to the API.
       operationId: getPublicKeyPem
       responses:
         '200':
-          description: OK
+          description: PEM-encoded public key
           content:
             text/plain:
               schema:
                 type: string
+              example: |
+                -----BEGIN PUBLIC KEY-----
+                MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEA...
+                -----END PUBLIC KEY-----
 
   /system/encryption/info/certificate.pem:
     get:
       tags:
         - encryption
+      summary: Download the certificate in PEM format
+      description: |
+        Returns the platform's current X.509 certificate in PEM-encoded format. The certificate
+        can be used to verify the identity of the API and validate signed responses.
       operationId: getCertificatePem
       responses:
         '200':
-          description: OK
+          description: PEM-encoded certificate
           content:
             text/plain:
               schema:
                 type: string
+              example: |
+                -----BEGIN CERTIFICATE-----
+                MIIDdzCCAl+gAwIBAgIEbGlua0ANBQ...
+                -----END CERTIFICATE-----
 
   /system/encryption/info:
     get:
       tags:
         - encryption
+      summary: Retrieve encryption metadata
+      description: |
+        Returns metadata about the platform's current encryption configuration, including the public key,
+        certificate, SHA-256 fingerprint, and key expiration date.
       operationId: getEncryptionInfo
       responses:
         '200':
-          description: OK
+          description: Encryption configuration metadata
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/WftWsResultPublicKeyInfoVoid'
+              example:
+                data:
+                  keyPem: "-----BEGIN PUBLIC KEY-----\nMIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8A...\n-----END PUBLIC KEY-----"
+                  certificatePem: "-----BEGIN CERTIFICATE-----\nMIIDdzCCAl+gAwIBAgIEbGlua0ANBQ...\n-----END CERTIFICATE-----"
+                  fingerprintSha256: "AB:CD:EF:12:34:56:78:90:AB:CD:EF:12:34:56:78:90:AB:CD:EF:12:34:56:78:90:AB:CD:EF:12:34:56:78:90"
+                  expires: "2026-12-31T23:59:59Z"
+                errors: []
 
 components:
   schemas:
@@ -227,6 +870,11 @@ components:
       required:
         - text
       properties:
+        correlationId:
+          type: string
+          maxLength: 128
+          minLength: 0
+          description: Optional client-provided identifier for correlating requests with external systems
         domain:
           type: string
           enum:
@@ -246,7 +894,73 @@ components:
         text:
           type: string
           description: The text to analyze. Must be valid UTF-8. Supports all languages.
+          minLength: 1
           example: This product changed my life – highly recommend!
+        timestamp:
+          type: string
+          format: date-time
+          description: Optional timestamp of the original text (e.g., when a review was posted). Defaults to the current time if omitted.
+        topic:
+          type: string
+          maxLength: 512
+          minLength: 0
+          description: Optional topic or subject label to categorize the analysis
+        weight:
+          type: number
+          format: double
+          description: Optional weight to assign to this analysis entry within a feed (e.g., for weighted averages)
+
+    CreateFeedRequest:
+      type: object
+      description: Request payload for creating a new sentiment analysis feed
+      required:
+        - name
+      properties:
+        id:
+          type: string
+          description: Optional client-provided identifier for the feed. If omitted, a UUID is generated automatically.
+        name:
+          type: string
+          minLength: 1
+          description: Human-readable name for the feed
+        description:
+          type: string
+          description: Optional description of the feed's purpose or scope
+        maxSize:
+          type: integer
+          format: int32
+          minimum: 1
+          description: Maximum number of analysis entries the feed can hold. Oldest entries may be evicted when the limit is reached.
+
+    UpdateFeedRequest:
+      type: object
+      description: Request payload for updating an existing sentiment analysis feed
+      properties:
+        description:
+          type: string
+          description: Updated description of the feed's purpose or scope
+
+    SentimentAnalysisFeed:
+      type: object
+      description: Represents a sentiment analysis feed used for grouping and tracking analyses
+      properties:
+        id:
+          type: string
+          description: Unique identifier of the feed
+        name:
+          type: string
+          description: Human-readable name of the feed
+        description:
+          type: string
+          description: Description of the feed's purpose or scope
+        size:
+          type: integer
+          format: int32
+          description: Current number of analysis entries in the feed
+        maxSize:
+          type: integer
+          format: int32
+          description: Maximum number of analysis entries the feed can hold
 
     Payload:
       type: object
@@ -258,26 +972,44 @@ components:
           description: Unique identifier of the created analysis job
           example: 3fa85f64-5717-4562-b3fc-2c963f66afa6
 
+    SentimentAnalysisJobMetadata:
+      type: object
+      description: Metadata about a submitted sentiment analysis job
+      properties:
+        submittedTextLength:
+          type: integer
+          format: int32
+          description: Character length of the submitted text
+
     PublicKeyInfo:
       type: object
+      description: Encryption key and certificate metadata for the platform
       properties:
         certificatePem:
           type: string
+          description: X.509 certificate in PEM-encoded format
         keyPem:
           type: string
+          description: RSA public key in PEM-encoded format
         fingerprintSha256:
           type: string
+          description: SHA-256 fingerprint of the certificate
         expires:
           type: string
           format: date-time
+          description: Expiration date of the certificate
 
     WftError:
       type: object
+      description: Represents an error returned by the API
       discriminator:
         propertyName: type
       required:
         - type
       properties:
+        recoverable:
+          type: boolean
+          description: Indicates whether the error is recoverable (e.g., retryable)
         type:
           type: string
           description: Machine-readable error identifier
@@ -287,6 +1019,18 @@ components:
         details:
           type: object
           description: Additional context or validation errors
+
+    WftWsResultSentimentAnalysisFeedVoid:
+      type: object
+      description: Standard wrapper for a sentiment analysis feed result
+      properties:
+        data:
+          $ref: '#/components/schemas/SentimentAnalysisFeed'
+        errors:
+          type: array
+          items:
+            $ref: '#/components/schemas/WftError'
+        metadata: {}
 
     WftWsResultPayloadVoid:
       type: object
@@ -298,9 +1042,11 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/WftError'
+        metadata: {}
 
     WftWsResultPayloadSentimentAnalysisJobMetadata:
       type: object
+      description: Standard success response containing a job ID with sentiment analysis job metadata
       properties:
         data:
           $ref: '#/components/schemas/Payload'
@@ -313,6 +1059,7 @@ components:
 
     WftWsResultPublicKeyInfoVoid:
       type: object
+      description: Standard wrapper for encryption key and certificate metadata
       properties:
         data:
           $ref: '#/components/schemas/PublicKeyInfo'
@@ -324,6 +1071,7 @@ components:
 
     EmotionScore:
       type: object
+      description: A detected emotion with its confidence score
       properties:
         emotion:
           type: string
@@ -334,7 +1082,8 @@ components:
             - ANGER
             - SURPRISE
             - DISGUST
-            - NEUTRAL
+            - CONTEMPT
+            - ANTICIPATION
           description: Detected primary emotion
         score:
           type: number
@@ -342,6 +1091,10 @@ components:
           minimum: 0
           maximum: 1
           description: Confidence that this emotion is present (0.0 = not present, 1.0 = strongly present)
+        schema:
+          $ref: '#/components/schemas/Schema'
+        specificData:
+          $ref: '#/components/schemas/SpecificData'
 
     SentimentAnalysis:
       type: object
@@ -350,6 +1103,9 @@ components:
         feedId:
           type: string
           description: The feedId submitted with the request (if any)
+        id:
+          type: string
+          description: Unique identifier (UUID) of this analysis result
         intent:
           type: string
           enum:
@@ -360,9 +1116,11 @@ components:
             - REQUEST
             - NEUTRAL
             - UNKNOWN
+          description: Detected intent category of the submitted text
         intentScore:
           type: number
           format: double
+          description: Confidence score for the detected intent (0.0 – 1.0)
         sentiment:
           type: string
           enum:
@@ -390,6 +1148,10 @@ components:
         rationale:
           type: string
           description: Human-readable explanation of the sentiment decision (optional)
+        inputTimestamp:
+          type: string
+          format: date-time
+          description: Timestamp of the original input text (if provided in the request)
         schema:
           $ref: '#/components/schemas/Schema'
         specificData:
@@ -405,13 +1167,355 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/WftError'
+        metadata: {}
+
+    WftWsResultPageListSentimentAnalysis:
+      type: object
+      description: Paginated list of sentiment analysis results with collection metadata and navigation links
+      properties:
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/SentimentAnalysis'
+        errors:
+          type: array
+          items:
+            $ref: '#/components/schemas/WftError'
+        metadata:
+          $ref: '#/components/schemas/WftWsCollectionResultMeta'
+        links:
+          type: array
+          items:
+            $ref: '#/components/schemas/Link'
+
+    WftWsCollectionResultMeta:
+      type: object
+      description: Pagination metadata for collection results
+      properties:
+        currentOffset:
+          type: integer
+          format: int64
+          description: The current offset position in the result set
+        totalCount:
+          type: integer
+          format: int64
+          description: Total number of items matching the query
+
+    Link:
+      type: object
+      description: Hypermedia link for navigating paginated results
+      properties:
+        href:
+          type: string
+          description: The URL of the linked resource
+        hreflang:
+          type: string
+          description: Language of the linked resource
+        title:
+          type: string
+          description: Human-readable title for the link
+        type:
+          type: string
+          description: Media type of the linked resource
+        deprecation:
+          type: string
+          description: URL indicating the deprecation status of the link
+        profile:
+          type: string
+          description: URI of the profile describing the linked resource
+        name:
+          type: string
+          description: Name of the link relation
+        templated:
+          type: boolean
+          description: Whether the href is a URI template
+
+    ConversionObject:
+      type: object
+      description: Describes a logical type conversion mapping
+      properties:
+        logicalTypeName:
+          type: string
+          description: Name of the logical type
+        recommendedSchema:
+          $ref: '#/components/schemas/Schema'
+
+    FastReaderBuilder:
+      type: object
+      description: Configuration for the fast reader builder
+      properties:
+        keyClassEnabled:
+          type: boolean
+          description: Whether key class optimization is enabled
+        classPropEnabled:
+          type: boolean
+          description: Whether class property optimization is enabled
+
+    Field:
+      type: object
+      description: Represents a field in an Avro schema
+      properties:
+        objectProps:
+          type: object
+          additionalProperties: {}
+          description: Additional properties associated with the field
+
+    LogicalType:
+      type: object
+      description: Represents an Avro logical type
+      properties:
+        name:
+          type: string
+          description: Name of the logical type (e.g., date, timestamp-millis)
 
     Schema:
       type: object
-      properties: {}
+      description: Avro schema definition
+      properties:
+        type:
+          type: string
+          enum:
+            - RECORD
+            - ENUM
+            - ARRAY
+            - MAP
+            - UNION
+            - FIXED
+            - STRING
+            - BYTES
+            - INT
+            - LONG
+            - FLOAT
+            - DOUBLE
+            - BOOLEAN
+            - 'NULL'
+          description: The Avro schema type
+        logicalType:
+          $ref: '#/components/schemas/LogicalType'
+        enumSymbols:
+          type: array
+          items:
+            type: string
+          description: List of symbols for ENUM types
+        fixedSize:
+          type: integer
+          format: int32
+          description: Size in bytes for FIXED types
+        union:
+          type: boolean
+          description: Whether this schema is a union type
+        doc:
+          type: string
+          description: Documentation string for the schema
+        enumDefault:
+          type: string
+          description: Default value for ENUM types
+        nullable:
+          type: boolean
+          description: Whether the schema allows null values
+        valueType: {}
+        types:
+          type: array
+          items: {}
+          description: Types within a union schema
+        elementType: {}
+        namespace:
+          type: string
+          description: Namespace of the schema
+        aliases:
+          type: array
+          items:
+            type: string
+          uniqueItems: true
+          description: Aliases for the schema name
+        name:
+          type: string
+          description: Name of the schema
+        fields:
+          type: array
+          items:
+            $ref: '#/components/schemas/Field'
+          description: Fields within a RECORD schema
+        error:
+          type: boolean
+          description: Whether this schema represents an error type
+        fullName:
+          type: string
+          description: Fully qualified name including namespace
+        objectProps:
+          type: object
+          additionalProperties: {}
+          description: Additional properties associated with the schema
+
     SpecificData:
       type: object
-      properties: {}
+      description: Avro-specific data configuration and runtime metadata
+      properties:
+        classLoader:
+          type: object
+          description: Class loader information for the Avro runtime
+          properties:
+            name:
+              type: string
+            registeredAsParallelCapable:
+              type: boolean
+            unnamedModule:
+              type: object
+              properties:
+                name:
+                  type: string
+                descriptor:
+                  type: object
+                  properties:
+                    open:
+                      type: boolean
+                    automatic:
+                      type: boolean
+                named:
+                  type: boolean
+                annotations:
+                  type: array
+                  items: {}
+                declaredAnnotations:
+                  type: array
+                  items: {}
+                packages:
+                  type: array
+                  items:
+                    type: string
+                  uniqueItems: true
+                nativeAccessEnabled:
+                  type: boolean
+                layer: {}
+            definedPackages:
+              type: array
+              items:
+                type: object
+                properties:
+                  name:
+                    type: string
+                  sealed:
+                    type: boolean
+                  annotations:
+                    type: array
+                    items: {}
+                  declaredAnnotations:
+                    type: array
+                    items: {}
+                  specificationTitle:
+                    type: string
+                  specificationVersion:
+                    type: string
+                  specificationVendor:
+                    type: string
+                  implementationTitle:
+                    type: string
+                  implementationVersion:
+                    type: string
+                  implementationVendor:
+                    type: string
+            defaultAssertionStatus:
+              type: boolean
+              writeOnly: true
+        conversions:
+          type: array
+          items:
+            $ref: '#/components/schemas/ConversionObject'
+          description: List of logical type conversion mappings
+        fastReaderEnabled:
+          type: boolean
+          description: Whether fast reader is enabled
+        fastReaderBuilder:
+          $ref: '#/components/schemas/FastReaderBuilder'
+        customCoders:
+          type: boolean
+          writeOnly: true
+          description: Whether custom coders are configured
+
+    Progress:
+      type: object
+      description: Represents the progress state of a job stage
+      properties:
+        details: {}
+        percentCompleted:
+          type: number
+          format: double
+          description: Percentage of completion for this stage (0.0 – 100.0)
+        stageId:
+          $ref: '#/components/schemas/Stage'
+
+    Stage:
+      description: Identifier for a job processing stage
+      type: object
+
+    SysJobState:
+      type: object
+      description: Complete state of an asynchronous system job
+      required:
+        - owner
+        - type
+      properties:
+        type:
+          type: string
+          description: Type of the job (e.g., SENTIMENT_ANALYSIS)
+        resultId:
+          type: string
+          format: uuid
+          description: UUID of the result produced by this job (available when status is SUCCEEDED)
+        owner:
+          $ref: '#/components/schemas/WftMtUser'
+        progressTracking:
+          $ref: '#/components/schemas/WftProgressTracking'
+        status:
+          type: string
+          enum:
+            - CANCELED
+            - FAILED
+            - PENDING
+            - PROCESSING
+            - SUCCEEDED
+          description: Current processing status of the job
+        ownerId:
+          type: string
+          description: Identifier of the job owner
+        tenantId:
+          type: string
+          description: Identifier of the tenant that owns this job
+
+    WftMtUser:
+      type: object
+      description: Represents the owner of a job or resource
+      properties:
+        tenantId:
+          type: string
+          description: Identifier of the tenant
+        userId:
+          type: string
+          description: Identifier of the user
+
+    WftProgressTracking:
+      type: object
+      description: Tracks the progress of a multi-stage job
+      properties:
+        progressStack:
+          type: array
+          items:
+            $ref: '#/components/schemas/Progress'
+          description: Stack of progress entries for nested stages
+        overallProgress:
+          $ref: '#/components/schemas/Progress'
+
+    WftWsResultSysJobStateVoid:
+      type: object
+      description: Standard wrapper for a system job state result
+      properties:
+        data:
+          $ref: '#/components/schemas/SysJobState'
+        errors:
+          type: array
+          items:
+            $ref: '#/components/schemas/WftError'
+        metadata: {}
 
   securitySchemes:
     UserSecurity:

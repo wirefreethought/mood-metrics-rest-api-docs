@@ -73,7 +73,6 @@ paths:
                 summary: Analyze a single piece of text (async)
                 value:
                   text: "I absolutely love this product! It's the best thing ever!"
-                  feedId: acme-corp-reviews
       responses:
         '200':
           description: Analysis job created or completed result returned, depending on async mode
@@ -94,7 +93,6 @@ paths:
                   summary: Synchronous mode (X-WFT-Async-Mode=false)
                   value:
                     data:
-                      feedId: acme-corp-reviews
                       intent: PRAISE
                       intentScore: 0.9
                       sentiment: VERY_POSITIVE
@@ -135,7 +133,6 @@ paths:
                 $ref: '#/components/schemas/WftWsResultSentimentAnalysisVoid'
               example:
                 data:
-                  feedId: acme-corp-reviews
                   sentiment: VERY_POSITIVE
                   sentimentScore: 0.94
                   emotionScores:
@@ -198,7 +195,7 @@ paths:
         - name: id
           in: path
           required: true
-          description: Unique identifier (UUID) of the user feed
+          description: Unique identifier of the user feed
           schema:
             type: string
           example: f1a2b3c4-d5e6-7890-abcd-ef1234567890
@@ -228,7 +225,7 @@ paths:
         - name: id
           in: path
           required: true
-          description: Unique identifier (UUID) of the user feed to update
+          description: Unique identifier of the user feed to update
           schema:
             type: string
           example: f1a2b3c4-d5e6-7890-abcd-ef1234567890
@@ -272,7 +269,7 @@ paths:
         - name: id
           in: path
           required: true
-          description: Unique identifier (UUID) of the user feed
+          description: Unique identifier of the user feed
           schema:
             type: string
           example: f1a2b3c4-d5e6-7890-abcd-ef1234567890
@@ -311,7 +308,6 @@ paths:
               example:
                 data:
                   - id: a1b2c3d4-e5f6-7890-g1h2-i3j4k5l6m7n8
-                    feedId: acme-product-reviews
                     sentiment: VERY_POSITIVE
                     sentimentScore: 0.94
                     emotionScores:
@@ -319,7 +315,6 @@ paths:
                         score: 0.97
                     rationale: Strong positive indicators
                   - id: b2c3d4e5-f6a7-8901-h2i3-j4k5l6m7n8o9
-                    feedId: acme-product-reviews
                     sentiment: NEGATIVE
                     sentimentScore: -0.65
                     emotionScores:
@@ -346,7 +341,7 @@ paths:
         - name: id
           in: path
           required: true
-          description: Unique identifier (UUID) of the user feed to associate the analysis with
+          description: Unique identifier of the user feed to associate the analysis with
           schema:
             type: string
           example: f1a2b3c4-d5e6-7890-abcd-ef1234567890
@@ -386,7 +381,6 @@ paths:
                   summary: Synchronous mode (X-WFT-Async-Mode=false)
                   value:
                     data:
-                      feedId: acme-product-reviews
                       intent: COMPLAINT
                       intentScore: 0.88
                       sentiment: NEGATIVE
@@ -411,7 +405,7 @@ paths:
         - name: id
           in: path
           required: true
-          description: Unique identifier (UUID) of the user feed
+          description: Unique identifier of the user feed
           schema:
             type: string
           example: f1a2b3c4-d5e6-7890-abcd-ef1234567890
@@ -448,7 +442,7 @@ paths:
         - name: id
           in: path
           required: true
-          description: Unique identifier (UUID) of the user feed
+          description: Unique identifier of the user feed
           schema:
             type: string
           example: f1a2b3c4-d5e6-7890-abcd-ef1234567890
@@ -539,7 +533,7 @@ paths:
         - name: id
           in: path
           required: true
-          description: Unique identifier (UUID) of the user feed
+          description: Unique identifier of the user feed
           schema:
             type: string
           example: f1a2b3c4-d5e6-7890-abcd-ef1234567890
@@ -619,7 +613,7 @@ paths:
         - name: id
           in: path
           required: true
-          description: Unique identifier (UUID) of the user feed
+          description: Unique identifier of the user feed
           schema:
             type: string
           example: f1a2b3c4-d5e6-7890-abcd-ef1234567890
@@ -742,7 +736,7 @@ paths:
         - name: id
           in: path
           required: true
-          description: Unique identifier (UUID) of the platform feed
+          description: Unique identifier of the platform feed
           schema:
             type: string
           example: c3d4e5f6-a7b8-9012-cdef-ab1234567890
@@ -772,7 +766,7 @@ paths:
         - name: id
           in: path
           required: true
-          description: Unique identifier (UUID) of the platform feed to update
+          description: Unique identifier of the platform feed to update
           schema:
             type: string
           example: c3d4e5f6-a7b8-9012-cdef-ab1234567890
@@ -816,7 +810,7 @@ paths:
         - name: id
           in: path
           required: true
-          description: Unique identifier (UUID) of the platform feed
+          description: Unique identifier of the platform feed
           schema:
             type: string
           example: c3d4e5f6-a7b8-9012-cdef-ab1234567890
@@ -855,7 +849,6 @@ paths:
               example:
                 data:
                   - id: d4e5f6a7-b8c9-0123-defg-bc2345678901
-                    feedId: twitter-brand-mentions
                     sentiment: POSITIVE
                     sentimentScore: 0.72
                     emotionScores:
@@ -863,7 +856,6 @@ paths:
                         score: 0.68
                     rationale: Generally positive tone with brand endorsement language
                   - id: e5f6a7b8-c9d0-1234-efgh-cd3456789012
-                    feedId: twitter-brand-mentions
                     sentiment: NEUTRAL
                     sentimentScore: 0.05
                     emotionScores:
@@ -890,7 +882,7 @@ paths:
         - name: id
           in: path
           required: true
-          description: Unique identifier (UUID) of the platform feed to associate the analysis with
+          description: Unique identifier of the platform feed to associate the analysis with
           schema:
             type: string
           example: c3d4e5f6-a7b8-9012-cdef-ab1234567890
@@ -930,7 +922,6 @@ paths:
                   summary: Synchronous mode (X-WFT-Async-Mode=false)
                   value:
                     data:
-                      feedId: twitter-brand-mentions
                       intent: PRAISE
                       intentScore: 0.82
                       sentiment: POSITIVE
@@ -955,7 +946,7 @@ paths:
         - name: id
           in: path
           required: true
-          description: Unique identifier (UUID) of the platform feed
+          description: Unique identifier of the platform feed
           schema:
             type: string
           example: c3d4e5f6-a7b8-9012-cdef-ab1234567890
@@ -991,7 +982,7 @@ paths:
         - name: id
           in: path
           required: true
-          description: Unique identifier (UUID) of the platform feed
+          description: Unique identifier of the platform feed
           schema:
             type: string
           example: c3d4e5f6-a7b8-9012-cdef-ab1234567890
@@ -1082,7 +1073,7 @@ paths:
         - name: id
           in: path
           required: true
-          description: Unique identifier (UUID) of the platform feed
+          description: Unique identifier of the platform feed
           schema:
             type: string
           example: c3d4e5f6-a7b8-9012-cdef-ab1234567890
@@ -1158,7 +1149,7 @@ paths:
         - name: id
           in: path
           required: true
-          description: Unique identifier (UUID) of the platform feed
+          description: Unique identifier of the platform feed
           schema:
             type: string
           example: c3d4e5f6-a7b8-9012-cdef-ab1234567890
@@ -1405,12 +1396,6 @@ components:
           description: Optional client-provided identifier for correlating requests with external systems
         domain:
           $ref: '#/components/schemas/AnalysisDomain'
-        feedId:
-          type: string
-          description: |
-            Optional identifier to group related texts. Enables long-term tracking, trend analysis,
-            and anomaly detection across all items sharing the same feedId.
-          example: twitter-brand-acme
         text:
           type: string
           description: The text to analyze. Must be valid UTF-8. Supports all languages.
@@ -1765,9 +1750,6 @@ components:
       type: object
       description: Complete result of sentiment analysis
       properties:
-        feedId:
-          type: string
-          description: The feedId submitted with the request (if any)
         id:
           type: string
           description: Unique identifier (UUID) of this analysis result

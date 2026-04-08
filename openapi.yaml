@@ -30,18 +30,17 @@ servers:
   - url: https://mood-metrics.p.rapidapi.com
     description: Production API endpoint (via RapidAPI)
 
-security:
-  - UserSecurity: []
-
 tags:
   - name: analysis
-    description: Submit and retrieve sentiment analysis results
+    description: Standalone sentiment analysis (`/analyses`)
+  - name: analysis-controller
+    description: Submit analysis within a user or platform feed
   - name: encryption
-    description: Provide encryption info
+    description: Encryption key and certificate material
   - name: job
-    description: Monitor and manage asynchronous processing jobs
+    description: Asynchronous processing jobs
   - name: feed-controller
-    description: Create, retrieve, update, and manage sentiment analysis feeds and their associated analyses
+    description: Create, retrieve, update, and manage feeds and related analyses
 
 paths:
   /analyses:
@@ -62,9 +61,7 @@ paths:
           in: header
           description: Controls whether the request is processed asynchronously (`true`, default) or synchronously (`false`).
           schema:
-            type: string
-            enum:
-              - 'true'
+            $ref: '#/components/schemas/AsyncModeHeaderValue'
       requestBody:
         required: true
         content:
@@ -357,9 +354,7 @@ paths:
           in: header
           description: Controls whether the request is processed asynchronously (`true`, default) or synchronously (`false`).
           schema:
-            type: string
-            enum:
-              - 'true'
+            $ref: '#/components/schemas/AsyncModeHeaderValue'
       requestBody:
         required: true
         content:
@@ -435,6 +430,267 @@ paths:
               schema:
                 type: object
               example: {}
+
+  /user-feeds/{id}/stats:
+    get:
+      tags:
+        - feed-controller
+      summary: Aggregate user-feed statistics by time bucket
+      description: |
+        Returns a paginated list of time-bucketed rollups for the specified user feed. Each item includes the interval
+        bounds (UTC), aggregate **sentiment** statistics (average score, variance, sample counts), and per-**emotion**
+        rollups for that interval.
+
+        Bucket boundaries are controlled by **granularity** (`HOUR`, `DAY`, `WEEK`, `MONTH`, or `ALL`). Use optional
+        **from** and **to** (`date-time`) to limit the window; use **limit** and **offset** to page through intervals.
+      operationId: getUserFeedStats
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: Unique identifier (UUID) of the user feed
+          schema:
+            type: string
+          example: f1a2b3c4-d5e6-7890-abcd-ef1234567890
+        - name: granularity
+          in: query
+          required: true
+          description: Size of each statistical interval (UTC bucket boundaries)
+          schema:
+            $ref: '#/components/schemas/StatGranularity'
+          example: DAY
+        - name: from
+          in: query
+          required: false
+          description: Inclusive start of the query window (ISO-8601 date-time). Omit to begin at the oldest available data.
+          schema:
+            type: string
+            format: date-time
+          example: "2025-04-01T00:00:00Z"
+        - name: to
+          in: query
+          required: false
+          description: Exclusive end of the query window (ISO-8601 date-time). Omit to use the latest available data.
+          schema:
+            type: string
+            format: date-time
+          example: "2025-04-08T00:00:00Z"
+        - name: limit
+          in: query
+          required: false
+          description: Maximum number of interval rows to return per page
+          schema:
+            type: integer
+            format: int64
+            default: 5
+          example: 10
+        - name: offset
+          in: query
+          required: false
+          description: Number of interval rows to skip before returning results
+          schema:
+            type: integer
+            format: int64
+            default: 0
+          example: 0
+      responses:
+        '200':
+          description: Paginated list of combined sentiment and emotion rollups per interval
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/WftWsResultPageListFeedIntervalStats'
+              example:
+                data:
+                  - interval:
+                      from: "2025-04-07T00:00:00Z"
+                      to: "2025-04-08T00:00:00Z"
+                    sentiment:
+                      avgScore: 0.52
+                      variance: 0.06
+                      sampleCount: 48
+                      segmentCount: 1
+                    emotions:
+                      - emotion: HAPPINESS
+                        avgScore: 0.61
+                        variance: 0.04
+                        sampleCount: 48
+                        segmentCount: 1
+                      - emotion: ANGER
+                        avgScore: 0.11
+                        variance: 0.02
+                        sampleCount: 12
+                        segmentCount: 1
+                errors: []
+                metadata:
+                  currentOffset: 0
+                  totalCount: 14
+
+  /user-feeds/{id}/stats/sentiment:
+    get:
+      tags:
+        - feed-controller
+      summary: Sentiment-only statistics for a user feed by time bucket
+      description: |
+        Same time bucketing and query parameters as `GET /user-feeds/{id}/stats`, but each item contains only the
+        overall **sentiment** rollup for the interval (no per-emotion breakdown). Useful for sparklines and high-level trends.
+      operationId: getUserFeedSentimentStats
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: Unique identifier (UUID) of the user feed
+          schema:
+            type: string
+          example: f1a2b3c4-d5e6-7890-abcd-ef1234567890
+        - name: granularity
+          in: query
+          required: true
+          description: Size of each statistical interval (UTC bucket boundaries)
+          schema:
+            $ref: '#/components/schemas/StatGranularity'
+          example: WEEK
+        - name: from
+          in: query
+          required: false
+          description: Inclusive start of the query window (ISO-8601 date-time)
+          schema:
+            type: string
+            format: date-time
+          example: "2025-03-01T00:00:00Z"
+        - name: to
+          in: query
+          required: false
+          description: Exclusive end of the query window (ISO-8601 date-time)
+          schema:
+            type: string
+            format: date-time
+          example: "2025-04-01T00:00:00Z"
+        - name: limit
+          in: query
+          required: false
+          description: Maximum number of interval rows to return per page
+          schema:
+            type: integer
+            format: int64
+            default: 5
+          example: 5
+        - name: offset
+          in: query
+          required: false
+          description: Number of interval rows to skip before returning results
+          schema:
+            type: integer
+            format: int64
+            default: 0
+          example: 0
+      responses:
+        '200':
+          description: Paginated list of sentiment rollups per interval
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/WftWsResultPageListSentimentIntervalStats'
+              example:
+                data:
+                  - interval:
+                      from: "2025-03-24T00:00:00Z"
+                      to: "2025-03-31T00:00:00Z"
+                    sentiment:
+                      avgScore: 0.38
+                      variance: 0.09
+                      sampleCount: 215
+                      segmentCount: 1
+                errors: []
+                metadata:
+                  currentOffset: 0
+                  totalCount: 6
+
+  /user-feeds/{id}/stats/emotions:
+    get:
+      tags:
+        - feed-controller
+      summary: Emotion-only statistics for a user feed by time bucket
+      description: |
+        Same time bucketing and query parameters as `GET /user-feeds/{id}/stats`, but each item lists **emotion** rollups
+        only (no combined sentiment summary object). Use this when building per-emotion trend charts.
+      operationId: getUserFeedEmotionStats
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: Unique identifier (UUID) of the user feed
+          schema:
+            type: string
+          example: f1a2b3c4-d5e6-7890-abcd-ef1234567890
+        - name: granularity
+          in: query
+          required: true
+          description: Size of each statistical interval (UTC bucket boundaries)
+          schema:
+            $ref: '#/components/schemas/StatGranularity'
+          example: HOUR
+        - name: from
+          in: query
+          required: false
+          description: Inclusive start of the query window (ISO-8601 date-time)
+          schema:
+            type: string
+            format: date-time
+          example: "2025-04-07T12:00:00Z"
+        - name: to
+          in: query
+          required: false
+          description: Exclusive end of the query window (ISO-8601 date-time)
+          schema:
+            type: string
+            format: date-time
+          example: "2025-04-07T18:00:00Z"
+        - name: limit
+          in: query
+          required: false
+          description: Maximum number of interval rows to return per page
+          schema:
+            type: integer
+            format: int64
+            default: 5
+          example: 24
+        - name: offset
+          in: query
+          required: false
+          description: Number of interval rows to skip before returning results
+          schema:
+            type: integer
+            format: int64
+            default: 0
+          example: 0
+      responses:
+        '200':
+          description: Paginated list of per-emotion rollups per interval
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/WftWsResultPageListEmotionIntervalStats'
+              example:
+                data:
+                  - interval:
+                      from: "2025-04-07T12:00:00Z"
+                      to: "2025-04-07T13:00:00Z"
+                    emotions:
+                      - emotion: HAPPINESS
+                        avgScore: 0.58
+                        variance: 0.03
+                        sampleCount: 22
+                        segmentCount: 1
+                      - emotion: SURPRISE
+                        avgScore: 0.21
+                        variance: 0.11
+                        sampleCount: 9
+                        segmentCount: 1
+                errors: []
+                metadata:
+                  currentOffset: 0
+                  totalCount: 12
 
   /platform-feeds:
     post:
@@ -642,9 +898,7 @@ paths:
           in: header
           description: Controls whether the request is processed asynchronously (`true`, default) or synchronously (`false`).
           schema:
-            type: string
-            enum:
-              - 'true'
+            $ref: '#/components/schemas/AsyncModeHeaderValue'
       requestBody:
         required: true
         content:
@@ -721,10 +975,262 @@ paths:
                 type: object
               example: {}
 
+  /platform-feeds/{id}/stats:
+    get:
+      tags:
+        - feed-controller
+      summary: Aggregate platform-feed statistics by time bucket
+      description: |
+        Returns a paginated list of time-bucketed rollups for the specified platform feed. Each item includes interval
+        bounds (UTC), aggregate **sentiment** statistics, and per-**emotion** rollups for that interval.
+
+        Use **granularity** for bucket size, optional **from** / **to** to bound the window, and **limit** / **offset**
+        for pagination—the same semantics as the user-feed stats endpoints.
+      operationId: getPlatformFeedStats
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: Unique identifier (UUID) of the platform feed
+          schema:
+            type: string
+          example: c3d4e5f6-a7b8-9012-cdef-ab1234567890
+        - name: granularity
+          in: query
+          required: true
+          description: Size of each statistical interval (UTC bucket boundaries)
+          schema:
+            $ref: '#/components/schemas/StatGranularity'
+          example: DAY
+        - name: from
+          in: query
+          required: false
+          description: Inclusive start of the query window (ISO-8601 date-time)
+          schema:
+            type: string
+            format: date-time
+          example: "2025-04-01T00:00:00Z"
+        - name: to
+          in: query
+          required: false
+          description: Exclusive end of the query window (ISO-8601 date-time)
+          schema:
+            type: string
+            format: date-time
+          example: "2025-04-08T00:00:00Z"
+        - name: limit
+          in: query
+          required: false
+          description: Maximum number of interval rows to return per page
+          schema:
+            type: integer
+            format: int64
+            default: 5
+          example: 10
+        - name: offset
+          in: query
+          required: false
+          description: Number of interval rows to skip before returning results
+          schema:
+            type: integer
+            format: int64
+            default: 0
+          example: 0
+      responses:
+        '200':
+          description: Paginated list of combined sentiment and emotion rollups per interval
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/WftWsResultPageListFeedIntervalStats'
+              example:
+                data:
+                  - interval:
+                      from: "2025-04-07T00:00:00Z"
+                      to: "2025-04-08T00:00:00Z"
+                    sentiment:
+                      avgScore: 0.65
+                      variance: 0.05
+                      sampleCount: 512
+                      segmentCount: 1
+                    emotions:
+                      - emotion: HAPPINESS
+                        avgScore: 0.55
+                        variance: 0.04
+                        sampleCount: 512
+                        segmentCount: 1
+                      - emotion: ANTICIPATION
+                        avgScore: 0.28
+                        variance: 0.07
+                        sampleCount: 140
+                        segmentCount: 1
+                errors: []
+                metadata:
+                  currentOffset: 0
+                  totalCount: 22
+
+  /platform-feeds/{id}/stats/sentiment:
+    get:
+      tags:
+        - feed-controller
+      summary: Sentiment-only statistics for a platform feed by time bucket
+      description: |
+        Same behavior as `GET /platform-feeds/{id}/stats`, but each row contains only the overall **sentiment** rollup
+        for the interval (no per-emotion array).
+      operationId: getPlatformFeedSentimentStats
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: Unique identifier (UUID) of the platform feed
+          schema:
+            type: string
+          example: c3d4e5f6-a7b8-9012-cdef-ab1234567890
+        - name: granularity
+          in: query
+          required: true
+          description: Size of each statistical interval (UTC bucket boundaries)
+          schema:
+            $ref: '#/components/schemas/StatGranularity'
+          example: MONTH
+        - name: from
+          in: query
+          required: false
+          description: Inclusive start of the query window (ISO-8601 date-time)
+          schema:
+            type: string
+            format: date-time
+        - name: to
+          in: query
+          required: false
+          description: Exclusive end of the query window (ISO-8601 date-time)
+          schema:
+            type: string
+            format: date-time
+        - name: limit
+          in: query
+          required: false
+          description: Maximum number of interval rows to return per page
+          schema:
+            type: integer
+            format: int64
+            default: 5
+        - name: offset
+          in: query
+          required: false
+          description: Number of interval rows to skip before returning results
+          schema:
+            type: integer
+            format: int64
+            default: 0
+      responses:
+        '200':
+          description: Paginated list of sentiment rollups per interval
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/WftWsResultPageListSentimentIntervalStats'
+              example:
+                data:
+                  - interval:
+                      from: "2025-03-01T00:00:00Z"
+                      to: "2025-04-01T00:00:00Z"
+                    sentiment:
+                      avgScore: 0.41
+                      variance: 0.07
+                      sampleCount: 4021
+                      segmentCount: 1
+                errors: []
+                metadata:
+                  currentOffset: 0
+                  totalCount: 3
+
+  /platform-feeds/{id}/stats/emotions:
+    get:
+      tags:
+        - feed-controller
+      summary: Emotion-only statistics for a platform feed by time bucket
+      description: |
+        Same behavior as `GET /platform-feeds/{id}/stats`, but each row lists **emotion** rollups only—ideal when you
+        plot several emotions independently across time.
+      operationId: getPlatformFeedEmotionStats
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: Unique identifier (UUID) of the platform feed
+          schema:
+            type: string
+          example: c3d4e5f6-a7b8-9012-cdef-ab1234567890
+        - name: granularity
+          in: query
+          required: true
+          description: Size of each statistical interval (UTC bucket boundaries)
+          schema:
+            $ref: '#/components/schemas/StatGranularity'
+          example: DAY
+        - name: from
+          in: query
+          required: false
+          description: Inclusive start of the query window (ISO-8601 date-time)
+          schema:
+            type: string
+            format: date-time
+        - name: to
+          in: query
+          required: false
+          description: Exclusive end of the query window (ISO-8601 date-time)
+          schema:
+            type: string
+            format: date-time
+        - name: limit
+          in: query
+          required: false
+          description: Maximum number of interval rows to return per page
+          schema:
+            type: integer
+            format: int64
+            default: 5
+        - name: offset
+          in: query
+          required: false
+          description: Number of interval rows to skip before returning results
+          schema:
+            type: integer
+            format: int64
+            default: 0
+      responses:
+        '200':
+          description: Paginated list of per-emotion rollups per interval
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/WftWsResultPageListEmotionIntervalStats'
+              example:
+                data:
+                  - interval:
+                      from: "2025-04-07T00:00:00Z"
+                      to: "2025-04-08T00:00:00Z"
+                    emotions:
+                      - emotion: HAPPINESS
+                        avgScore: 0.62
+                        variance: 0.03
+                        sampleCount: 301
+                        segmentCount: 1
+                      - emotion: DISGUST
+                        avgScore: 0.08
+                        variance: 0.01
+                        sampleCount: 44
+                        segmentCount: 1
+                errors: []
+                metadata:
+                  currentOffset: 0
+                  totalCount: 22
+
   /system/jobs/{id}:
     get:
       tags:
-        - sys-job-controller
+        - job
       summary: Retrieve full job details
       description: |
         Returns the complete state of an asynchronous job, including status, owner information,
@@ -864,6 +1370,28 @@ paths:
 
 components:
   schemas:
+    AnalysisDomain:
+      type: string
+      description: |
+        Selects the sentiment analysis model and output shape for this request.
+
+        - **GENERAL** (default when omitted): Full analysis—sentiment label, confidence, primary emotions, rationale,
+          and intent. Use for social posts, reviews, support tickets, and general text.
+        - **FINANCIAL_NEWS**: Polarity-focused output for market tone (e.g. earnings, upgrades). Returns only sentiment
+          label and confidence; emotions, rationale, and intent are omitted.
+      enum:
+        - GENERAL
+        - FINANCIAL_NEWS
+
+    AsyncModeHeaderValue:
+      type: string
+      description: |
+        Value for the `X-WFT-Async-Mode` header on analysis `POST` operations that map to the async controller variant.
+        Send **`true`** to request asynchronous processing (initial response contains a job id; poll job endpoints for results).
+        For synchronous processing, omit this header or call the operation variant documented for synchronous bodies—see each path’s description.
+      enum:
+        - 'true'
+
     AnalyzeTextRequest:
       type: object
       description: Request payload for submitting text for sentiment analysis
@@ -876,15 +1404,7 @@ components:
           minLength: 0
           description: Optional client-provided identifier for correlating requests with external systems
         domain:
-          type: string
-          enum:
-            - GENERAL
-            - FINANCIAL_NEWS
-          description: |
-            Optional. Selects the sentiment analysis model and output format.
-            - `GENERAL` (default): Full analysis including sentiment label, confidence score, primary emotions, rationale, and intent signals. Suitable for social media, reviews, support tickets, etc.
-            - `FINANCIAL_NEWS`: Polarity-only output optimized for market tone (e.g. "beat estimates", "downgrade"). Returns **only** `sentimentLabel` and `confidence`. No emotions, rationale, or intent are included.
-            Omitted → defaults to `GENERAL`.
+          $ref: '#/components/schemas/AnalysisDomain'
         feedId:
           type: string
           description: |
@@ -1069,22 +1589,27 @@ components:
             $ref: '#/components/schemas/WftError'
         metadata: {}
 
+    EmotionLabel:
+      type: string
+      description: |
+        Plutchik-style primary emotion label used in `emotionScores` and in feed statistics rollups.
+        Values align with the API’s emotion taxonomy (see product contract).
+      enum:
+        - HAPPINESS
+        - SADNESS
+        - FEAR
+        - ANGER
+        - SURPRISE
+        - DISGUST
+        - CONTEMPT
+        - ANTICIPATION
+
     EmotionScore:
       type: object
       description: A detected emotion with its confidence score
       properties:
         emotion:
-          type: string
-          enum:
-            - HAPPINESS
-            - SADNESS
-            - FEAR
-            - ANGER
-            - SURPRISE
-            - DISGUST
-            - CONTEMPT
-            - ANTICIPATION
-          description: Detected primary emotion
+          $ref: '#/components/schemas/EmotionLabel'
         score:
           type: number
           format: double
@@ -1095,6 +1620,146 @@ components:
           $ref: '#/components/schemas/Schema'
         specificData:
           $ref: '#/components/schemas/SpecificData'
+
+    EmotionIntervalStats:
+      type: object
+      description: Per-interval emotion rollup statistics for a feed (no combined sentiment summary)
+      properties:
+        interval:
+          $ref: '#/components/schemas/IntervalBounds'
+        emotions:
+          type: array
+          description: Rollup statistics for each detected emotion in this interval
+          items:
+            $ref: '#/components/schemas/EmotionRollupStats'
+
+    EmotionRollupStats:
+      type: object
+      description: Aggregate statistics for a single emotion label within a time bucket
+      properties:
+        emotion:
+          $ref: '#/components/schemas/EmotionLabel'
+        avgScore:
+          type: number
+          format: double
+          description: Mean score for this emotion in the interval
+        variance:
+          type: number
+          format: double
+          description: Variance of scores across samples in the interval
+        sampleCount:
+          type: integer
+          format: int64
+          description: Number of underlying emotion score samples
+        segmentCount:
+          type: integer
+          format: int64
+          description: Number of segments or buckets aggregated into this rollup
+
+    FeedIntervalStats:
+      type: object
+      description: Full combined rollup for one time bucket—overall sentiment plus per-emotion breakdown
+      properties:
+        interval:
+          $ref: '#/components/schemas/IntervalBounds'
+        sentiment:
+          $ref: '#/components/schemas/RollupStats'
+        emotions:
+          type: array
+          description: Per-emotion rollups for the same interval
+          items:
+            $ref: '#/components/schemas/EmotionRollupStats'
+
+    IntervalBounds:
+      type: object
+      description: UTC half-open interval `[from, to)` for a statistics bucket
+      properties:
+        from:
+          type: string
+          format: date-time
+          description: Inclusive start of the interval
+        to:
+          type: string
+          format: date-time
+          description: Exclusive end of the interval
+
+    RollupStats:
+      type: object
+      description: Numeric rollup (mean, variance, counts) over sentiment scores or emotion scores in an interval
+      properties:
+        avgScore:
+          type: number
+          format: double
+          description: Mean normalized score in the bucket
+        variance:
+          type: number
+          format: double
+          description: Variance of scores in the bucket
+        sampleCount:
+          type: integer
+          format: int64
+          description: Number of score samples contributing to the rollup
+        segmentCount:
+          type: integer
+          format: int64
+          description: Number of logical segments aggregated (implementation-specific)
+
+    SentimentIntervalStats:
+      type: object
+      description: Per-interval overall sentiment rollup only (no per-emotion list)
+      properties:
+        interval:
+          $ref: '#/components/schemas/IntervalBounds'
+        sentiment:
+          $ref: '#/components/schemas/RollupStats'
+
+    StatGranularity:
+      type: string
+      description: |
+        Allowed values for the `granularity` query parameter on feed statistics endpoints. Each value selects the
+        width of a UTC-aligned time bucket used to aggregate sentiment and emotion scores.
+
+        - **HOUR** — one bucket per clock hour
+        - **DAY** — one bucket per calendar day
+        - **WEEK** — one bucket per calendar week
+        - **MONTH** — one bucket per calendar month
+        - **ALL** — a single bucket spanning the entire requested (or available) range
+      enum:
+        - HOUR
+        - DAY
+        - WEEK
+        - MONTH
+        - ALL
+
+    IntentCategory:
+      type: string
+      description: |
+        High-level intent inferred from the submitted text (e.g. praise vs complaint). The classifier may return
+        **UNKNOWN** when intent is unclear.
+      enum:
+        - COMPLAINT
+        - PRAISE
+        - INQUIRY
+        - SUGGESTION
+        - REQUEST
+        - NEUTRAL
+        - UNKNOWN
+
+    SentimentCategory:
+      type: string
+      description: |
+        Discrete overall sentiment label. **MIXED** indicates strongly conflicting signals; **UNCERTAIN** indicates
+        low confidence or borderline polarity.
+      enum:
+        - VERY_NEGATIVE
+        - NEGATIVE
+        - SLIGHTLY_NEGATIVE
+        - NEUTRAL
+        - SLIGHTLY_POSITIVE
+        - POSITIVE
+        - VERY_POSITIVE
+        - MIXED
+        - UNCERTAIN
 
     SentimentAnalysis:
       type: object
@@ -1107,33 +1772,13 @@ components:
           type: string
           description: Unique identifier (UUID) of this analysis result
         intent:
-          type: string
-          enum:
-            - COMPLAINT
-            - PRAISE
-            - INQUIRY
-            - SUGGESTION
-            - REQUEST
-            - NEUTRAL
-            - UNKNOWN
-          description: Detected intent category of the submitted text
+          $ref: '#/components/schemas/IntentCategory'
         intentScore:
           type: number
           format: double
           description: Confidence score for the detected intent (0.0 – 1.0)
         sentiment:
-          type: string
-          enum:
-            - VERY_NEGATIVE
-            - NEGATIVE
-            - SLIGHTLY_NEGATIVE
-            - NEUTRAL
-            - SLIGHTLY_POSITIVE
-            - POSITIVE
-            - VERY_POSITIVE
-            - MIXED
-            - UNCERTAIN
-          description: Overall sentiment classification
+          $ref: '#/components/schemas/SentimentCategory'
         sentimentScore:
           type: number
           format: double
@@ -1177,6 +1822,63 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/SentimentAnalysis'
+        errors:
+          type: array
+          items:
+            $ref: '#/components/schemas/WftError'
+        metadata:
+          $ref: '#/components/schemas/WftWsCollectionResultMeta'
+        links:
+          type: array
+          items:
+            $ref: '#/components/schemas/Link'
+
+    WftWsResultPageListEmotionIntervalStats:
+      type: object
+      description: Paginated list of emotion-only interval statistics with collection metadata and navigation links
+      properties:
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/EmotionIntervalStats'
+        errors:
+          type: array
+          items:
+            $ref: '#/components/schemas/WftError'
+        metadata:
+          $ref: '#/components/schemas/WftWsCollectionResultMeta'
+        links:
+          type: array
+          items:
+            $ref: '#/components/schemas/Link'
+
+    WftWsResultPageListFeedIntervalStats:
+      type: object
+      description: Paginated list of combined feed interval statistics (sentiment + emotions) with collection metadata and navigation links
+      properties:
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/FeedIntervalStats'
+        errors:
+          type: array
+          items:
+            $ref: '#/components/schemas/WftError'
+        metadata:
+          $ref: '#/components/schemas/WftWsCollectionResultMeta'
+        links:
+          type: array
+          items:
+            $ref: '#/components/schemas/Link'
+
+    WftWsResultPageListSentimentIntervalStats:
+      type: object
+      description: Paginated list of sentiment-only interval statistics with collection metadata and navigation links
+      properties:
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/SentimentIntervalStats'
         errors:
           type: array
           items:
@@ -1268,28 +1970,33 @@ components:
           type: string
           description: Name of the logical type (e.g., date, timestamp-millis)
 
+    AvroSchemaKind:
+      type: string
+      description: |
+        Avro `type` discriminator carried on serialized analysis payloads. **RECORD** / complex kinds describe nested schema
+        graphs; primitive kinds (**STRING**, **INT**, etc.) appear when the logical value is wrapped in Avro metadata.
+      enum:
+        - RECORD
+        - ENUM
+        - ARRAY
+        - MAP
+        - UNION
+        - FIXED
+        - STRING
+        - BYTES
+        - INT
+        - LONG
+        - FLOAT
+        - DOUBLE
+        - BOOLEAN
+        - 'NULL'
+
     Schema:
       type: object
       description: Avro schema definition
       properties:
         type:
-          type: string
-          enum:
-            - RECORD
-            - ENUM
-            - ARRAY
-            - MAP
-            - UNION
-            - FIXED
-            - STRING
-            - BYTES
-            - INT
-            - LONG
-            - FLOAT
-            - DOUBLE
-            - BOOLEAN
-            - 'NULL'
-          description: The Avro schema type
+          $ref: '#/components/schemas/AvroSchemaKind'
         logicalType:
           $ref: '#/components/schemas/LogicalType'
         enumSymbols:
@@ -1448,6 +2155,18 @@ components:
       description: Identifier for a job processing stage
       type: object
 
+    JobProcessingStatus:
+      type: string
+      description: |
+        Lifecycle state of an asynchronous job returned by `/system/jobs/{id}` and related endpoints.
+        Poll until **SUCCEEDED** (then read `resultId`) or **FAILED** / **CANCELED** for terminal error handling.
+      enum:
+        - CANCELED
+        - FAILED
+        - PENDING
+        - PROCESSING
+        - SUCCEEDED
+
     SysJobState:
       type: object
       description: Complete state of an asynchronous system job
@@ -1467,14 +2186,7 @@ components:
         progressTracking:
           $ref: '#/components/schemas/WftProgressTracking'
         status:
-          type: string
-          enum:
-            - CANCELED
-            - FAILED
-            - PENDING
-            - PROCESSING
-            - SUCCEEDED
-          description: Current processing status of the job
+          $ref: '#/components/schemas/JobProcessingStatus'
         ownerId:
           type: string
           description: Identifier of the job owner
@@ -1516,12 +2228,3 @@ components:
           items:
             $ref: '#/components/schemas/WftError'
         metadata: {}
-
-  securitySchemes:
-    UserSecurity:
-      type: apiKey
-      in: header
-      name: X-RapidAPI-Key
-      description: >-
-        Your personal RapidAPI key (required in the X-RapidAPI-Key header).
-        Get your key at https://rapidapi.com/wirefreethought/api/mood-metrics

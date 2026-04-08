@@ -146,6 +146,60 @@ paths:
                 errors: []
 
   /platform-feeds:
+    get:
+      tags:
+        - platform-feed
+      summary: List platform feeds
+      description: |
+        Returns a paginated list of all platform-scoped feeds. When **`sort`** is omitted, results are ordered by feed
+        **`name`** ascending, then **`id`** ascending.
+
+        Supports pagination via `limit` and `offset`, and sorting via the `sort` parameter (allowed fields: `name`, `id`).
+      operationId: listPlatformFeeds
+      parameters:
+        - name: limit
+          in: query
+          required: false
+          description: Maximum number of feeds to return per page
+          schema:
+            type: integer
+            format: int64
+            default: 5
+          example: 10
+        - name: offset
+          in: query
+          required: false
+          description: Number of feeds to skip before returning (for pagination)
+          schema:
+            type: integer
+            format: int64
+            default: 0
+          example: 0
+        - name: sort
+          in: query
+          required: false
+          description: Sort order (e.g. `name,asc` or `id,desc`). Allowed properties are `name` and `id`.
+          schema:
+            type: string
+          example: name,asc
+      responses:
+        '200':
+          description: Paginated list of platform feeds
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/WftWsResultPageListSentimentAnalysisFeed'
+              example:
+                data:
+                  - id: c3d4e5f6-a7b8-9012-cdef-ab1234567890
+                    name: twitter-brand-mentions
+                    description: Platform-wide sentiment tracking for Twitter brand mentions
+                    size: 128
+                    maxSize: 5000
+                errors: []
+                metadata:
+                  currentOffset: 0
+                  totalCount: 1
     post:
       tags:
         - platform-feed
@@ -819,6 +873,60 @@ paths:
                     errors: []
 
   /user-feeds:
+    get:
+      tags:
+        - user-feed
+      summary: List user feeds
+      description: |
+        Returns a paginated list of sentiment analysis feeds owned by the authenticated user in the current tenant.
+        When **`sort`** is omitted, results are ordered by feed **`name`** ascending, then **`id`** ascending.
+
+        Supports pagination via `limit` and `offset`, and sorting via the `sort` parameter (allowed fields: `name`, `id`).
+      operationId: listUserFeeds
+      parameters:
+        - name: limit
+          in: query
+          required: false
+          description: Maximum number of feeds to return per page
+          schema:
+            type: integer
+            format: int64
+            default: 5
+          example: 10
+        - name: offset
+          in: query
+          required: false
+          description: Number of feeds to skip before returning (for pagination)
+          schema:
+            type: integer
+            format: int64
+            default: 0
+          example: 0
+        - name: sort
+          in: query
+          required: false
+          description: Sort order (e.g. `name,asc` or `id,desc`). Allowed properties are `name` and `id`.
+          schema:
+            type: string
+          example: name,asc
+      responses:
+        '200':
+          description: Paginated list of user feeds for the authenticated principal
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/WftWsResultPageListSentimentAnalysisFeed'
+              example:
+                data:
+                  - id: f1a2b3c4-d5e6-7890-abcd-ef1234567890
+                    name: acme-product-reviews
+                    description: Sentiment tracking for Acme Corp product reviews
+                    size: 42
+                    maxSize: 1000
+                errors: []
+                metadata:
+                  currentOffset: 0
+                  totalCount: 1
     post:
       tags:
         - user-feed
@@ -1804,6 +1912,25 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/SentimentAnalysis'
+        errors:
+          type: array
+          items:
+            $ref: '#/components/schemas/WftError'
+        metadata:
+          $ref: '#/components/schemas/WftWsCollectionResultMeta'
+        links:
+          type: array
+          items:
+            $ref: '#/components/schemas/Link'
+
+    WftWsResultPageListSentimentAnalysisFeed:
+      type: object
+      description: Paginated list of sentiment analysis feeds with collection metadata and navigation links
+      properties:
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/SentimentAnalysisFeed'
         errors:
           type: array
           items:

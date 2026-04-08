@@ -33,14 +33,12 @@ servers:
 tags:
   - name: analysis
     description: Standalone sentiment analysis (`/analyses`)
-  - name: feed-analyses
-    description: Submit analysis within a user or platform feed
   - name: encryption
     description: Encryption key and certificate material
-  - name: job
-    description: Asynchronous processing jobs
   - name: feed
     description: Create, retrieve, update, and manage feeds and related analyses
+  - name: job
+    description: Asynchronous processing jobs
 
 paths:
   /analyses:
@@ -327,7 +325,7 @@ paths:
                   totalCount: 42
     post:
       tags:
-        - feed-analyses
+        - feed
       summary: Submit text for analysis within a user feed
       description: |
         Submits text for sentiment analysis and associates the result with the specified user feed.
@@ -868,7 +866,7 @@ paths:
                   totalCount: 128
     post:
       tags:
-        - feed-analyses
+        - feed
       summary: Submit text for analysis within a platform feed
       description: |
         Submits text for sentiment analysis and associates the result with the specified platform feed.

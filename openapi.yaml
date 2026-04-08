@@ -35,10 +35,12 @@ tags:
     description: Standalone sentiment analysis (`/analyses`)
   - name: encryption
     description: Encryption key and certificate material
-  - name: feed
-    description: Create, retrieve, update, and manage feeds and related analyses
   - name: job
     description: Asynchronous processing jobs
+  - name: platform-feed
+    description: Platform-scoped feeds (`/platform-feeds`) and related analyses and statistics
+  - name: user-feed
+    description: User-scoped feeds (`/user-feeds`) and related analyses and statistics
 
 paths:
   /analyses:
@@ -146,7 +148,7 @@ paths:
   /platform-feeds:
     post:
       tags:
-        - feed
+        - platform-feed
       summary: Create a new platform feed
       description: |
         Creates a new platform-scoped sentiment analysis feed. Platform feeds are shared across users
@@ -184,7 +186,7 @@ paths:
   /platform-feeds/{id}:
     get:
       tags:
-        - feed
+        - platform-feed
       summary: Retrieve a platform feed
       description: |
         Fetches the details of a platform-scoped feed by its ID, including name, description, current size, and maximum size.
@@ -214,7 +216,7 @@ paths:
                 errors: []
     put:
       tags:
-        - feed
+        - platform-feed
       summary: Update a platform feed
       description: |
         Updates the mutable properties of a platform-scoped feed. Currently supports updating the feed description.
@@ -257,7 +259,7 @@ paths:
   /platform-feeds/{id}/analyses:
     get:
       tags:
-        - feed
+        - platform-feed
       summary: List analyses for a platform feed
       description: |
         Returns a paginated list of sentiment analysis results associated with the specified platform feed.
@@ -325,7 +327,7 @@ paths:
                   totalCount: 128
     post:
       tags:
-        - feed
+        - platform-feed
       summary: Submit text for analysis within a platform feed
       description: |
         Submits text for sentiment analysis and associates the result with the specified platform feed.
@@ -394,7 +396,7 @@ paths:
   /platform-feeds/{id}/analyses/{analysisId}:
     delete:
       tags:
-        - feed
+        - platform-feed
       summary: Delete an analysis from a platform feed
       description: |
         Removes a specific sentiment analysis result from the specified platform feed. This operation is irreversible.
@@ -426,7 +428,7 @@ paths:
   /platform-feeds/{id}/stats:
     get:
       tags:
-        - feed
+        - platform-feed
       summary: Aggregate platform-feed statistics by time bucket
       description: |
         Returns a paginated list of time-bucketed rollups for the specified platform feed. Each item includes interval
@@ -520,7 +522,7 @@ paths:
   /platform-feeds/{id}/stats/emotions:
     get:
       tags:
-        - feed
+        - platform-feed
       summary: Emotion-only statistics for a platform feed by time bucket
       description: |
         Same behavior as `GET /platform-feeds/{id}/stats`, but each row lists **emotion** rollups only—ideal when you
@@ -602,7 +604,7 @@ paths:
   /platform-feeds/{id}/stats/sentiment:
     get:
       tags:
-        - feed
+        - platform-feed
       summary: Sentiment-only statistics for a platform feed by time bucket
       description: |
         Same behavior as `GET /platform-feeds/{id}/stats`, but each row contains only the overall **sentiment** rollup
@@ -819,7 +821,7 @@ paths:
   /user-feeds:
     post:
       tags:
-        - feed
+        - user-feed
       summary: Create a new user feed
       description: |
         Creates a new user-scoped sentiment analysis feed. Feeds allow you to group related analyses
@@ -857,7 +859,7 @@ paths:
   /user-feeds/{id}:
     get:
       tags:
-        - feed
+        - user-feed
       summary: Retrieve a user feed
       description: |
         Fetches the details of a user-scoped feed by its ID, including name, description, current size, and maximum size.
@@ -887,7 +889,7 @@ paths:
                 errors: []
     put:
       tags:
-        - feed
+        - user-feed
       summary: Update a user feed
       description: |
         Updates the mutable properties of a user-scoped feed. Currently supports updating the feed description.
@@ -930,7 +932,7 @@ paths:
   /user-feeds/{id}/analyses:
     get:
       tags:
-        - feed
+        - user-feed
       summary: List analyses for a user feed
       description: |
         Returns a paginated list of sentiment analysis results associated with the specified user feed.
@@ -998,7 +1000,7 @@ paths:
                   totalCount: 42
     post:
       tags:
-        - feed
+        - user-feed
       summary: Submit text for analysis within a user feed
       description: |
         Submits text for sentiment analysis and associates the result with the specified user feed.
@@ -1067,7 +1069,7 @@ paths:
   /user-feeds/{id}/analyses/{analysisId}:
     delete:
       tags:
-        - feed
+        - user-feed
       summary: Delete an analysis from a user feed
       description: |
         Removes a specific sentiment analysis result from the specified user feed. This operation is irreversible.
@@ -1099,7 +1101,7 @@ paths:
   /user-feeds/{id}/stats:
     get:
       tags:
-        - feed
+        - user-feed
       summary: Aggregate user-feed statistics by time bucket
       description: |
         Returns a paginated list of time-bucketed rollups for the specified user feed. Each item includes the interval
@@ -1194,7 +1196,7 @@ paths:
   /user-feeds/{id}/stats/emotions:
     get:
       tags:
-        - feed
+        - user-feed
       summary: Emotion-only statistics for a user feed by time bucket
       description: |
         Same time bucketing and query parameters as `GET /user-feeds/{id}/stats`, but each item lists **emotion** rollups
@@ -1280,7 +1282,7 @@ paths:
   /user-feeds/{id}/stats/sentiment:
     get:
       tags:
-        - feed
+        - user-feed
       summary: Sentiment-only statistics for a user feed by time bucket
       description: |
         Same time bucketing and query parameters as `GET /user-feeds/{id}/stats`, but each item contains only the

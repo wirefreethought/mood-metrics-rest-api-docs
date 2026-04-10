@@ -317,7 +317,8 @@ paths:
       summary: List analyses for a platform feed
       description: |
         Returns a paginated list of sentiment analysis results associated with the specified platform feed.
-        Supports pagination via `limit` and `offset`, and sorting via the `sort` parameter.
+        Supports pagination via `limit` and `offset`, sorting via `sort`, and optional `from` / `to` filters on
+        `inputTimestamp` (subject to your tier’s maximum history window).
       operationId: getPlatformFeedAnalyses
       parameters:
         - name: id
@@ -352,6 +353,20 @@ paths:
           schema:
             type: string
           example: sentimentScore,desc
+        - name: from
+          in: query
+          required: false
+          description: Inclusive lower bound on analysis `inputTimestamp` (ISO-8601); window is clamped to your tier’s max history.
+          schema:
+            type: string
+            format: date-time
+        - name: to
+          in: query
+          required: false
+          description: Inclusive upper bound on analysis `inputTimestamp` (ISO-8601)
+          schema:
+            type: string
+            format: date-time
       responses:
         '200':
           description: Paginated list of sentiment analysis results for the platform feed
@@ -501,8 +516,8 @@ paths:
           example: c3d4e5f6-a7b8-9012-cdef-ab1234567890
         - name: granularity
           in: query
-          required: true
-          description: Size of each statistical interval (UTC bucket boundaries)
+          required: false
+          description: Size of each statistical interval (UTC bucket boundaries). When omitted, defaults to your tier’s configured granularity.
           schema:
             $ref: '#/components/schemas/StatGranularity'
           example: DAY
@@ -592,8 +607,8 @@ paths:
           example: c3d4e5f6-a7b8-9012-cdef-ab1234567890
         - name: granularity
           in: query
-          required: true
-          description: Size of each statistical interval (UTC bucket boundaries)
+          required: false
+          description: Size of each statistical interval (UTC bucket boundaries). When omitted, defaults to your tier’s configured granularity.
           schema:
             $ref: '#/components/schemas/StatGranularity'
           example: DAY
@@ -674,8 +689,8 @@ paths:
           example: c3d4e5f6-a7b8-9012-cdef-ab1234567890
         - name: granularity
           in: query
-          required: true
-          description: Size of each statistical interval (UTC bucket boundaries)
+          required: false
+          description: Size of each statistical interval (UTC bucket boundaries). When omitted, defaults to your tier’s configured granularity.
           schema:
             $ref: '#/components/schemas/StatGranularity'
           example: MONTH
@@ -1044,7 +1059,8 @@ paths:
       summary: List analyses for a user feed
       description: |
         Returns a paginated list of sentiment analysis results associated with the specified user feed.
-        Supports pagination via `limit` and `offset`, and sorting via the `sort` parameter.
+        Supports pagination via `limit` and `offset`, sorting via `sort`, and optional `from` / `to` on `inputTimestamp`
+        (subject to your tier’s maximum history window).
       operationId: getUserFeedAnalyses
       parameters:
         - name: id
@@ -1079,6 +1095,20 @@ paths:
           schema:
             type: string
           example: sentimentScore,desc
+        - name: from
+          in: query
+          required: false
+          description: Inclusive lower bound on analysis `inputTimestamp` (ISO-8601); window is clamped to your tier’s max history.
+          schema:
+            type: string
+            format: date-time
+        - name: to
+          in: query
+          required: false
+          description: Inclusive upper bound on analysis `inputTimestamp` (ISO-8601)
+          schema:
+            type: string
+            format: date-time
       responses:
         '200':
           description: Paginated list of sentiment analysis results for the user feed
@@ -1216,7 +1246,7 @@ paths:
         bounds (UTC), aggregate **sentiment** statistics (average score, variance, sample counts), and per-**emotion**
         rollups for that interval.
 
-        Bucket boundaries are controlled by **granularity** (`HOUR`, `DAY`, `WEEK`, `MONTH`, or `ALL`). Use optional
+        Bucket boundaries are controlled by **granularity** (`HOUR`, `DAY`, `WEEK`, `MONTH`, or `LIFETIME`). Use optional
         **from** and **to** (`date-time`) to limit the window; use **limit** and **offset** to page through intervals.
       operationId: getUserFeedStats
       parameters:
@@ -1229,8 +1259,8 @@ paths:
           example: f1a2b3c4-d5e6-7890-abcd-ef1234567890
         - name: granularity
           in: query
-          required: true
-          description: Size of each statistical interval (UTC bucket boundaries)
+          required: false
+          description: Size of each statistical interval (UTC bucket boundaries). When omitted, defaults to your tier’s configured granularity.
           schema:
             $ref: '#/components/schemas/StatGranularity'
           example: DAY
@@ -1320,8 +1350,8 @@ paths:
           example: f1a2b3c4-d5e6-7890-abcd-ef1234567890
         - name: granularity
           in: query
-          required: true
-          description: Size of each statistical interval (UTC bucket boundaries)
+          required: false
+          description: Size of each statistical interval (UTC bucket boundaries). When omitted, defaults to your tier’s configured granularity.
           schema:
             $ref: '#/components/schemas/StatGranularity'
           example: HOUR
@@ -1406,8 +1436,8 @@ paths:
           example: f1a2b3c4-d5e6-7890-abcd-ef1234567890
         - name: granularity
           in: query
-          required: true
-          description: Size of each statistical interval (UTC bucket boundaries)
+          required: false
+          description: Size of each statistical interval (UTC bucket boundaries). When omitted, defaults to your tier’s configured granularity.
           schema:
             $ref: '#/components/schemas/StatGranularity'
           example: WEEK
@@ -1816,13 +1846,13 @@ components:
         - **DAY** — one bucket per calendar day
         - **WEEK** — one bucket per calendar week
         - **MONTH** — one bucket per calendar month
-        - **ALL** — a single bucket spanning the entire requested (or available) range
+        - **LIFETIME** — a single bucket for the full feed (entire requested or available range)
       enum:
         - HOUR
         - DAY
         - WEEK
         - MONTH
-        - ALL
+        - LIFETIME
 
     IntentCategory:
       type: string
@@ -1872,9 +1902,9 @@ components:
         sentimentScore:
           type: number
           format: double
-          minimum: -1
+          minimum: 0
           maximum: 1
-          description: Normalized sentiment polarity score (-1.0 = very negative, +1.0 = very positive)
+          description: Confidence score for the detected sentiment (0.0 – 1.0)
         emotionScores:
           type: array
           description: Per-emotion confidence scores

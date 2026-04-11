@@ -524,7 +524,10 @@ paths:
         - name: from
           in: query
           required: false
-          description: Inclusive start of the query window (ISO-8601 date-time)
+          description: |
+            Inclusive start of the query window (ISO-8601 `date-time`, UTC recommended). After plan limits (max history,
+            `to` cap), the server aligns the window to **granularity** UTC buckets: snapped to bucket start, then clamped
+            up to the policy floor if the snap would cross it. **LIFETIME** skips this bucket expansion.
           schema:
             type: string
             format: date-time
@@ -532,7 +535,10 @@ paths:
         - name: to
           in: query
           required: false
-          description: Exclusive end of the query window (ISO-8601 date-time)
+          description: |
+            Exclusive end of the query window (half-open interval). After plan limits, may expand to the next UTC bucket
+            boundary for **granularity** unless capped by policy (e.g. current time for non-admin). **LIFETIME** skips this
+            expansion. `WEEK` buckets begin Monday 00:00 UTC; `MONTH` begins the first calendar day 00:00 UTC.
           schema:
             type: string
             format: date-time
@@ -615,14 +621,20 @@ paths:
         - name: from
           in: query
           required: false
-          description: Inclusive start of the query window (ISO-8601 date-time)
+          description: |
+            Inclusive start of the query window (ISO-8601 `date-time`, UTC recommended). After plan limits (max history,
+            `to` cap), the server aligns the window to **granularity** UTC buckets: snapped to bucket start, then clamped
+            up to the policy floor if the snap would cross it. **LIFETIME** skips this bucket expansion.
           schema:
             type: string
             format: date-time
         - name: to
           in: query
           required: false
-          description: Exclusive end of the query window (ISO-8601 date-time)
+          description: |
+            Exclusive end of the query window (half-open interval). After plan limits, may expand to the next UTC bucket
+            boundary for **granularity** unless capped by policy (e.g. current time for non-admin). **LIFETIME** skips this
+            expansion. `WEEK` buckets begin Monday 00:00 UTC; `MONTH` begins the first calendar day 00:00 UTC.
           schema:
             type: string
             format: date-time
@@ -697,14 +709,20 @@ paths:
         - name: from
           in: query
           required: false
-          description: Inclusive start of the query window (ISO-8601 date-time)
+          description: |
+            Inclusive start of the query window (ISO-8601 `date-time`, UTC recommended). After plan limits (max history,
+            `to` cap), the server aligns the window to **granularity** UTC buckets: snapped to bucket start, then clamped
+            up to the policy floor if the snap would cross it. **LIFETIME** skips this bucket expansion.
           schema:
             type: string
             format: date-time
         - name: to
           in: query
           required: false
-          description: Exclusive end of the query window (ISO-8601 date-time)
+          description: |
+            Exclusive end of the query window (half-open interval). After plan limits, may expand to the next UTC bucket
+            boundary for **granularity** unless capped by policy (e.g. current time for non-admin). **LIFETIME** skips this
+            expansion. `WEEK` buckets begin Monday 00:00 UTC; `MONTH` begins the first calendar day 00:00 UTC.
           schema:
             type: string
             format: date-time
@@ -1267,7 +1285,11 @@ paths:
         - name: from
           in: query
           required: false
-          description: Inclusive start of the query window (ISO-8601 date-time). Omit to begin at the oldest available data.
+          description: |
+            Inclusive start of the query window (ISO-8601 `date-time`, UTC recommended). Omit to begin at the oldest
+            available data. After plan limits, the server aligns the window to **granularity** UTC buckets: snapped to
+            bucket start, then clamped up to the policy floor if the snap would cross it. **LIFETIME** skips this bucket
+            expansion.
           schema:
             type: string
             format: date-time
@@ -1275,7 +1297,11 @@ paths:
         - name: to
           in: query
           required: false
-          description: Exclusive end of the query window (ISO-8601 date-time). Omit to use the latest available data.
+          description: |
+            Exclusive end of the query window (half-open interval). Omit to use the latest available data. After plan
+            limits, may expand to the next UTC bucket boundary for **granularity** unless capped by policy (e.g. current
+            time for non-admin). **LIFETIME** skips this expansion. `WEEK` = Monday 00:00 UTC; `MONTH` = first calendar day
+            00:00 UTC.
           schema:
             type: string
             format: date-time
@@ -1358,7 +1384,10 @@ paths:
         - name: from
           in: query
           required: false
-          description: Inclusive start of the query window (ISO-8601 date-time)
+          description: |
+            Inclusive start of the query window (ISO-8601 `date-time`, UTC recommended). After plan limits (max history,
+            `to` cap), the server aligns the window to **granularity** UTC buckets: snapped to bucket start, then clamped
+            up to the policy floor if the snap would cross it. **LIFETIME** skips this bucket expansion.
           schema:
             type: string
             format: date-time
@@ -1366,7 +1395,10 @@ paths:
         - name: to
           in: query
           required: false
-          description: Exclusive end of the query window (ISO-8601 date-time)
+          description: |
+            Exclusive end of the query window (half-open interval). After plan limits, may expand to the next UTC bucket
+            boundary for **granularity** unless capped by policy (e.g. current time for non-admin). **LIFETIME** skips this
+            expansion. `WEEK` buckets begin Monday 00:00 UTC; `MONTH` begins the first calendar day 00:00 UTC.
           schema:
             type: string
             format: date-time
@@ -1444,7 +1476,10 @@ paths:
         - name: from
           in: query
           required: false
-          description: Inclusive start of the query window (ISO-8601 date-time)
+          description: |
+            Inclusive start of the query window (ISO-8601 `date-time`, UTC recommended). After plan limits (max history,
+            `to` cap), the server aligns the window to **granularity** UTC buckets: snapped to bucket start, then clamped
+            up to the policy floor if the snap would cross it. **LIFETIME** skips this bucket expansion.
           schema:
             type: string
             format: date-time
@@ -1452,7 +1487,10 @@ paths:
         - name: to
           in: query
           required: false
-          description: Exclusive end of the query window (ISO-8601 date-time)
+          description: |
+            Exclusive end of the query window (half-open interval). After plan limits, may expand to the next UTC bucket
+            boundary for **granularity** unless capped by policy (e.g. current time for non-admin). **LIFETIME** skips this
+            expansion. `WEEK` buckets begin Monday 00:00 UTC; `MONTH` begins the first calendar day 00:00 UTC.
           schema:
             type: string
             format: date-time

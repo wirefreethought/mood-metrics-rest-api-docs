@@ -213,10 +213,10 @@ paths:
         - name: id
           in: path
           required: true
-          description: Unique identifier of the platform feed
+          description: Unique identifier of the platform feed. May be any unique string — not required to be a UUID.
           schema:
             type: string
-          example: c3d4e5f6-a7b8-9012-cdef-ab1234567890
+          example: my-unique-feed-id-123
       responses:
         '200':
           description: Platform feed details
@@ -249,10 +249,10 @@ paths:
         - name: id
           in: path
           required: true
-          description: Unique identifier of the platform feed
+          description: Unique identifier of the platform feed. May be any unique string — not required to be a UUID.
           schema:
             type: string
-          example: c3d4e5f6-a7b8-9012-cdef-ab1234567890
+          example: my-unique-feed-id-123
         - name: granularity
           in: query
           required: false
@@ -346,10 +346,10 @@ paths:
         - name: id
           in: path
           required: true
-          description: Unique identifier of the platform feed
+          description: Unique identifier of the platform feed. May be any unique string — not required to be a UUID.
           schema:
             type: string
-          example: c3d4e5f6-a7b8-9012-cdef-ab1234567890
+          example: my-unique-feed-id-123
         - name: granularity
           in: query
           required: false
@@ -434,10 +434,10 @@ paths:
         - name: id
           in: path
           required: true
-          description: Unique identifier of the platform feed
+          description: Unique identifier of the platform feed. May be any unique string — not required to be a UUID.
           schema:
             type: string
-          example: c3d4e5f6-a7b8-9012-cdef-ab1234567890
+          example: my-unique-feed-id-123
         - name: granularity
           in: query
           required: false
@@ -748,10 +748,10 @@ paths:
         - name: id
           in: path
           required: true
-          description: Unique identifier of the user feed
+          description: Unique identifier of the user feed. May be any unique string — not required to be a UUID.
           schema:
             type: string
-          example: f1a2b3c4-d5e6-7890-abcd-ef1234567890
+          example: my-unique-feed-id-456
       responses:
         '200':
           description: User feed details
@@ -778,10 +778,10 @@ paths:
         - name: id
           in: path
           required: true
-          description: Unique identifier of the user feed to update
+          description: Unique identifier of the user feed. May be any unique string — not required to be a UUID.
           schema:
             type: string
-          example: f1a2b3c4-d5e6-7890-abcd-ef1234567890
+          example: my-unique-feed-id-456
       requestBody:
         required: true
         content:
@@ -823,10 +823,10 @@ paths:
         - name: id
           in: path
           required: true
-          description: Unique identifier of the user feed
+          description: Unique identifier of the user feed. May be any unique string — not required to be a UUID.
           schema:
             type: string
-          example: f1a2b3c4-d5e6-7890-abcd-ef1234567890
+          example: my-unique-feed-id-456
         - name: limit
           in: query
           required: false
@@ -909,10 +909,10 @@ paths:
         - name: id
           in: path
           required: true
-          description: Unique identifier of the user feed to associate the analysis with
+          description: Unique identifier of the user feed. May be any unique string — not required to be a UUID.
           schema:
             type: string
-          example: f1a2b3c4-d5e6-7890-abcd-ef1234567890
+          example: my-unique-feed-id-456
         - name: X-WFT-Async-Mode
           in: header
           description: Controls whether the request is processed asynchronously (`true`, default) or synchronously (`false`).
@@ -973,10 +973,10 @@ paths:
         - name: id
           in: path
           required: true
-          description: Unique identifier of the user feed
+          description: Unique identifier of the user feed. May be any unique string — not required to be a UUID.
           schema:
             type: string
-          example: f1a2b3c4-d5e6-7890-abcd-ef1234567890
+          example: my-unique-feed-id-456
         - name: analysisId
           in: path
           required: true
@@ -1010,10 +1010,10 @@ paths:
         - name: id
           in: path
           required: true
-          description: Unique identifier of the user feed
+          description: Unique identifier of the user feed. May be any unique string — not required to be a UUID.
           schema:
             type: string
-          example: f1a2b3c4-d5e6-7890-abcd-ef1234567890
+          example: my-unique-feed-id-456
         - name: granularity
           in: query
           required: false
@@ -1109,10 +1109,10 @@ paths:
         - name: id
           in: path
           required: true
-          description: Unique identifier of the user feed
+          description: Unique identifier of the user feed. May be any unique string — not required to be a UUID.
           schema:
             type: string
-          example: f1a2b3c4-d5e6-7890-abcd-ef1234567890
+          example: my-unique-feed-id-456
         - name: granularity
           in: query
           required: false
@@ -1201,10 +1201,10 @@ paths:
         - name: id
           in: path
           required: true
-          description: Unique identifier of the user feed
+          description: Unique identifier of the user feed. May be any unique string — not required to be a UUID.
           schema:
             type: string
-          example: f1a2b3c4-d5e6-7890-abcd-ef1234567890
+          example: my-unique-feed-id-456
         - name: granularity
           in: query
           required: false

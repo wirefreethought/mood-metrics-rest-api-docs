@@ -240,7 +240,9 @@ paths:
       summary: Aggregate platform-feed statistics by time bucket
       description: |
         Returns a paginated list of time-bucketed rollups for the specified platform feed. Each item includes interval
-        bounds (UTC), aggregate **sentiment** statistics, and per-**emotion** rollups for that interval.
+        bounds (UTC), **sentiment** statistics as three parallel rollups (**positive**, **negative**, **neutral**—each
+        with mean score, variance, and sample counts for analyses labeled that sentiment in the bucket), and per-**emotion**
+        rollups for that interval.
 
         Use **granularity** for bucket size, optional **from** / **to** to bound the window, and **limit** / **offset**
         for pagination—the same semantics as the user-feed stats endpoints.
@@ -264,7 +266,8 @@ paths:
           in: query
           required: false
           description: |
-            Inclusive start of the query window (ISO-8601 `date-time`, UTC recommended). After plan limits (max history,
+            Inclusive start of the query window (ISO-8601 `date-time`, UTC recommended; a calendar date `YYYY-MM-DD`
+            alone is interpreted as 00:00:00 UTC that day). After plan limits (max history,
             `to` cap), the server aligns the window to **granularity** UTC buckets: snapped to bucket start, then clamped
             up to the policy floor if the snap would cross it. **LIFETIME** skips this bucket expansion.
           schema:
@@ -275,7 +278,8 @@ paths:
           in: query
           required: false
           description: |
-            Exclusive end of the query window (half-open interval). After plan limits, may expand to the next UTC bucket
+            Exclusive end of the query window (half-open interval). A calendar date `YYYY-MM-DD` alone is interpreted as
+            00:00:00 UTC that day. After plan limits, may expand to the next UTC bucket
             boundary for **granularity** unless capped by policy (e.g. current time for non-admin). **LIFETIME** skips this
             expansion. `WEEK` buckets begin Monday 00:00 UTC; `MONTH` begins the first calendar day 00:00 UTC.
           schema:
@@ -313,10 +317,21 @@ paths:
                       from: "2025-04-07T00:00:00Z"
                       to: "2025-04-08T00:00:00Z"
                     sentiment:
-                      avgScore: 0.65
-                      variance: 0.05
-                      sampleCount: 512
-                      segmentCount: 1
+                      positive:
+                        avgScore: 0.72
+                        variance: 0.04
+                        sampleCount: 220
+                        segmentCount: 1
+                      negative:
+                        avgScore: 0.18
+                        variance: 0.02
+                        sampleCount: 95
+                        segmentCount: 1
+                      neutral:
+                        avgScore: 0.55
+                        variance: 0.06
+                        sampleCount: 197
+                        segmentCount: 1
                     emotions:
                       - emotion: HAPPINESS
                         avgScore: 0.55
@@ -361,7 +376,8 @@ paths:
           in: query
           required: false
           description: |
-            Inclusive start of the query window (ISO-8601 `date-time`, UTC recommended). After plan limits (max history,
+            Inclusive start of the query window (ISO-8601 `date-time`, UTC recommended; a calendar date `YYYY-MM-DD`
+            alone is interpreted as 00:00:00 UTC that day). After plan limits (max history,
             `to` cap), the server aligns the window to **granularity** UTC buckets: snapped to bucket start, then clamped
             up to the policy floor if the snap would cross it. **LIFETIME** skips this bucket expansion.
           schema:
@@ -371,7 +387,8 @@ paths:
           in: query
           required: false
           description: |
-            Exclusive end of the query window (half-open interval). After plan limits, may expand to the next UTC bucket
+            Exclusive end of the query window (half-open interval). A calendar date `YYYY-MM-DD` alone is interpreted as
+            00:00:00 UTC that day. After plan limits, may expand to the next UTC bucket
             boundary for **granularity** unless capped by policy (e.g. current time for non-admin). **LIFETIME** skips this
             expansion. `WEEK` buckets begin Monday 00:00 UTC; `MONTH` begins the first calendar day 00:00 UTC.
           schema:
@@ -427,8 +444,8 @@ paths:
         - platform-feed
       summary: Sentiment-only statistics for a platform feed by time bucket
       description: |
-        Same behavior as `GET /platform-feeds/{id}/stats`, but each row contains only the overall **sentiment** rollup
-        for the interval (no per-emotion array).
+        Same behavior as `GET /platform-feeds/{id}/stats`, but each row contains only the **sentiment** triple (positive,
+        negative, neutral rollups) for the interval (no per-emotion array).
       operationId: getPlatformFeedSentimentStats
       parameters:
         - name: id
@@ -449,7 +466,8 @@ paths:
           in: query
           required: false
           description: |
-            Inclusive start of the query window (ISO-8601 `date-time`, UTC recommended). After plan limits (max history,
+            Inclusive start of the query window (ISO-8601 `date-time`, UTC recommended; a calendar date `YYYY-MM-DD`
+            alone is interpreted as 00:00:00 UTC that day). After plan limits (max history,
             `to` cap), the server aligns the window to **granularity** UTC buckets: snapped to bucket start, then clamped
             up to the policy floor if the snap would cross it. **LIFETIME** skips this bucket expansion.
           schema:
@@ -459,7 +477,8 @@ paths:
           in: query
           required: false
           description: |
-            Exclusive end of the query window (half-open interval). After plan limits, may expand to the next UTC bucket
+            Exclusive end of the query window (half-open interval). A calendar date `YYYY-MM-DD` alone is interpreted as
+            00:00:00 UTC that day. After plan limits, may expand to the next UTC bucket
             boundary for **granularity** unless capped by policy (e.g. current time for non-admin). **LIFETIME** skips this
             expansion. `WEEK` buckets begin Monday 00:00 UTC; `MONTH` begins the first calendar day 00:00 UTC.
           schema:
@@ -494,10 +513,21 @@ paths:
                       from: "2025-03-01T00:00:00Z"
                       to: "2025-04-01T00:00:00Z"
                     sentiment:
-                      avgScore: 0.41
-                      variance: 0.07
-                      sampleCount: 4021
-                      segmentCount: 1
+                      positive:
+                        avgScore: 0.58
+                        variance: 0.05
+                        sampleCount: 1200
+                        segmentCount: 1
+                      negative:
+                        avgScore: 0.22
+                        variance: 0.03
+                        sampleCount: 800
+                        segmentCount: 1
+                      neutral:
+                        avgScore: 0.48
+                        variance: 0.08
+                        sampleCount: 2021
+                        segmentCount: 1
                 errors: []
                 metadata:
                   currentOffset: 0
@@ -855,14 +885,18 @@ paths:
         - name: from
           in: query
           required: false
-          description: Inclusive lower bound on analysis `inputTimestamp` (ISO-8601); window is clamped to your tier’s max history.
+          description: |
+            Inclusive lower bound on analysis `inputTimestamp` (ISO-8601 instant, or calendar date `YYYY-MM-DD` as
+            00:00:00 UTC); window is clamped to your tier’s max history.
           schema:
             type: string
             format: date-time
         - name: to
           in: query
           required: false
-          description: Inclusive upper bound on analysis `inputTimestamp` (ISO-8601)
+          description: |
+            Inclusive upper bound on analysis `inputTimestamp` (ISO-8601 instant, or calendar date `YYYY-MM-DD` as
+            00:00:00 UTC)
           schema:
             type: string
             format: date-time
@@ -1000,7 +1034,7 @@ paths:
       summary: Aggregate user-feed statistics by time bucket
       description: |
         Returns a paginated list of time-bucketed rollups for the specified user feed. Each item includes the interval
-        bounds (UTC), aggregate **sentiment** statistics (average score, variance, sample counts), and per-**emotion**
+        bounds (UTC), **sentiment** as three parallel rollups (**positive**, **negative**, **neutral**), and per-**emotion**
         rollups for that interval.
 
         Bucket boundaries are controlled by **granularity** (`HOUR`, `DAY`, `WEEK`, `MONTH`, or `LIFETIME`). Use optional
@@ -1025,7 +1059,8 @@ paths:
           in: query
           required: false
           description: |
-            Inclusive start of the query window (ISO-8601 `date-time`, UTC recommended). Omit to begin at the oldest
+            Inclusive start of the query window (ISO-8601 `date-time`, UTC recommended; a calendar date `YYYY-MM-DD`
+            alone is interpreted as 00:00:00 UTC that day). Omit to begin at the oldest
             available data. After plan limits, the server aligns the window to **granularity** UTC buckets: snapped to
             bucket start, then clamped up to the policy floor if the snap would cross it. **LIFETIME** skips this bucket
             expansion.
@@ -1037,7 +1072,8 @@ paths:
           in: query
           required: false
           description: |
-            Exclusive end of the query window (half-open interval). Omit to use the latest available data. After plan
+            Exclusive end of the query window (half-open interval). A calendar date `YYYY-MM-DD` alone is interpreted as
+            00:00:00 UTC that day. Omit to use the latest available data. After plan
             limits, may expand to the next UTC bucket boundary for **granularity** unless capped by policy (e.g. current
             time for non-admin). **LIFETIME** skips this expansion. `WEEK` = Monday 00:00 UTC; `MONTH` = first calendar day
             00:00 UTC.
@@ -1076,10 +1112,21 @@ paths:
                       from: "2025-04-07T00:00:00Z"
                       to: "2025-04-08T00:00:00Z"
                     sentiment:
-                      avgScore: 0.52
-                      variance: 0.06
-                      sampleCount: 48
-                      segmentCount: 1
+                      positive:
+                        avgScore: 0.64
+                        variance: 0.05
+                        sampleCount: 18
+                        segmentCount: 1
+                      negative:
+                        avgScore: 0.12
+                        variance: 0.02
+                        sampleCount: 8
+                        segmentCount: 1
+                      neutral:
+                        avgScore: 0.51
+                        variance: 0.07
+                        sampleCount: 22
+                        segmentCount: 1
                     emotions:
                       - emotion: HAPPINESS
                         avgScore: 0.61
@@ -1124,7 +1171,8 @@ paths:
           in: query
           required: false
           description: |
-            Inclusive start of the query window (ISO-8601 `date-time`, UTC recommended). After plan limits (max history,
+            Inclusive start of the query window (ISO-8601 `date-time`, UTC recommended; a calendar date `YYYY-MM-DD`
+            alone is interpreted as 00:00:00 UTC that day). After plan limits (max history,
             `to` cap), the server aligns the window to **granularity** UTC buckets: snapped to bucket start, then clamped
             up to the policy floor if the snap would cross it. **LIFETIME** skips this bucket expansion.
           schema:
@@ -1135,7 +1183,8 @@ paths:
           in: query
           required: false
           description: |
-            Exclusive end of the query window (half-open interval). After plan limits, may expand to the next UTC bucket
+            Exclusive end of the query window (half-open interval). A calendar date `YYYY-MM-DD` alone is interpreted as
+            00:00:00 UTC that day. After plan limits, may expand to the next UTC bucket
             boundary for **granularity** unless capped by policy (e.g. current time for non-admin). **LIFETIME** skips this
             expansion. `WEEK` buckets begin Monday 00:00 UTC; `MONTH` begins the first calendar day 00:00 UTC.
           schema:
@@ -1195,7 +1244,8 @@ paths:
       summary: Sentiment-only statistics for a user feed by time bucket
       description: |
         Same time bucketing and query parameters as `GET /user-feeds/{id}/stats`, but each item contains only the
-        overall **sentiment** rollup for the interval (no per-emotion breakdown). Useful for sparklines and high-level trends.
+        **sentiment** triple (positive, negative, neutral rollups) for the interval (no per-emotion breakdown). Useful for
+        sparklines and high-level trends.
       operationId: getUserFeedSentimentStats
       parameters:
         - name: id
@@ -1216,7 +1266,8 @@ paths:
           in: query
           required: false
           description: |
-            Inclusive start of the query window (ISO-8601 `date-time`, UTC recommended). After plan limits (max history,
+            Inclusive start of the query window (ISO-8601 `date-time`, UTC recommended; a calendar date `YYYY-MM-DD`
+            alone is interpreted as 00:00:00 UTC that day). After plan limits (max history,
             `to` cap), the server aligns the window to **granularity** UTC buckets: snapped to bucket start, then clamped
             up to the policy floor if the snap would cross it. **LIFETIME** skips this bucket expansion.
           schema:
@@ -1227,7 +1278,8 @@ paths:
           in: query
           required: false
           description: |
-            Exclusive end of the query window (half-open interval). After plan limits, may expand to the next UTC bucket
+            Exclusive end of the query window (half-open interval). A calendar date `YYYY-MM-DD` alone is interpreted as
+            00:00:00 UTC that day. After plan limits, may expand to the next UTC bucket
             boundary for **granularity** unless capped by policy (e.g. current time for non-admin). **LIFETIME** skips this
             expansion. `WEEK` buckets begin Monday 00:00 UTC; `MONTH` begins the first calendar day 00:00 UTC.
           schema:
@@ -1265,10 +1317,21 @@ paths:
                       from: "2025-03-24T00:00:00Z"
                       to: "2025-03-31T00:00:00Z"
                     sentiment:
-                      avgScore: 0.38
-                      variance: 0.09
-                      sampleCount: 215
-                      segmentCount: 1
+                      positive:
+                        avgScore: 0.55
+                        variance: 0.08
+                        sampleCount: 80
+                        segmentCount: 1
+                      negative:
+                        avgScore: 0.25
+                        variance: 0.04
+                        sampleCount: 45
+                        segmentCount: 1
+                      neutral:
+                        avgScore: 0.42
+                        variance: 0.10
+                        sampleCount: 90
+                        segmentCount: 1
                 errors: []
                 metadata:
                   currentOffset: 0
@@ -1558,12 +1621,12 @@ components:
 
     FeedIntervalStats:
       type: object
-      description: Full combined rollup for one time bucket—overall sentiment plus per-emotion breakdown
+      description: Full combined rollup for one time bucket—sentiment triple (positive / negative / neutral) plus per-emotion breakdown
       properties:
         interval:
           $ref: '#/components/schemas/IntervalBounds'
         sentiment:
-          $ref: '#/components/schemas/RollupStats'
+          $ref: '#/components/schemas/SentimentTripleStats'
         emotions:
           type: array
           description: Per-emotion rollups for the same interval
@@ -1585,7 +1648,7 @@ components:
 
     RollupStats:
       type: object
-      description: Numeric rollup (mean, variance, counts) over sentiment scores or emotion scores in an interval
+      description: Numeric rollup (mean, variance, counts) for one emotion label or one sentiment label track in an interval
       properties:
         avgScore:
           type: number
@@ -1606,11 +1669,29 @@ components:
 
     SentimentIntervalStats:
       type: object
-      description: Per-interval overall sentiment rollup only (no per-emotion list)
+      description: Per-interval sentiment triple only (no per-emotion list)
       properties:
         interval:
           $ref: '#/components/schemas/IntervalBounds'
         sentiment:
+          $ref: '#/components/schemas/SentimentTripleStats'
+
+    SentimentTripleStats:
+      type: object
+      description: |
+        Parallel rollups for analyses labeled **positive**, **negative**, or **neutral** in the interval. Each track’s
+        `sampleCount` counts only rows with that label; analyses with no sentiment label do not contribute to any track.
+        Unused tracks report zero mean and variance with `sampleCount` 0.
+      required:
+        - positive
+        - negative
+        - neutral
+      properties:
+        positive:
+          $ref: '#/components/schemas/RollupStats'
+        negative:
+          $ref: '#/components/schemas/RollupStats'
+        neutral:
           $ref: '#/components/schemas/RollupStats'
 
     StatGranularity:

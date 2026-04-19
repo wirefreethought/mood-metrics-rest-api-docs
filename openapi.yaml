@@ -263,6 +263,15 @@ paths:
           schema:
             $ref: '#/components/schemas/StatGranularity'
           example: DAY
+        - name: sentimentStats
+          in: query
+          required: false
+          description: |
+            Which sentiment-shaped fields appear on each interval row (default **`normalized`**). Responses should be
+            treated as varying by this parameter for HTTP caching.
+          schema:
+            $ref: '#/components/schemas/SentimentStatsMode'
+          example: normalized
         - name: from
           in: query
           required: false
@@ -305,15 +314,6 @@ paths:
             format: int64
             default: 0
           example: 0
-        - name: sentimentStats
-          in: query
-          required: false
-          description: |
-            Which sentiment-shaped fields appear on each interval row (default **`normalized`**). Responses should be
-            treated as varying by this parameter for HTTP caching.
-          schema:
-            $ref: '#/components/schemas/SentimentStatsMode'
-          example: normalized
       responses:
         '200':
           description: Paginated list of combined sentiment and emotion rollups per interval
@@ -569,6 +569,13 @@ paths:
           schema:
             $ref: '#/components/schemas/StatGranularity'
           example: MONTH
+        - name: sentimentStats
+          in: query
+          required: false
+          description: Same as combined stats — default **`normalized`** (`sentimentDistribution` only).
+          schema:
+            $ref: '#/components/schemas/SentimentStatsMode'
+          example: normalized
         - name: from
           in: query
           required: false
@@ -607,13 +614,6 @@ paths:
             type: integer
             format: int64
             default: 0
-        - name: sentimentStats
-          in: query
-          required: false
-          description: Same as combined stats — default **`normalized`** (`sentimentDistribution` only).
-          schema:
-            $ref: '#/components/schemas/SentimentStatsMode'
-          example: normalized
       responses:
         '200':
           description: Paginated list of sentiment rollups per interval
@@ -1208,6 +1208,13 @@ paths:
           schema:
             $ref: '#/components/schemas/StatGranularity'
           example: DAY
+        - name: sentimentStats
+          in: query
+          required: false
+          description: Same as `GET /platform-feeds/{id}/stats` (default **`normalized`**).
+          schema:
+            $ref: '#/components/schemas/SentimentStatsMode'
+          example: normalized
         - name: from
           in: query
           required: false
@@ -1252,13 +1259,6 @@ paths:
             format: int64
             default: 0
           example: 0
-        - name: sentimentStats
-          in: query
-          required: false
-          description: Same as `GET /platform-feeds/{id}/stats` (default **`normalized`**).
-          schema:
-            $ref: '#/components/schemas/SentimentStatsMode'
-          example: normalized
       responses:
         '200':
           description: Paginated list of combined sentiment and emotion rollups per interval
@@ -1429,6 +1429,13 @@ paths:
           schema:
             $ref: '#/components/schemas/StatGranularity'
           example: WEEK
+        - name: sentimentStats
+          in: query
+          required: false
+          description: Same as combined user-feed stats (default **`normalized`**).
+          schema:
+            $ref: '#/components/schemas/SentimentStatsMode'
+          example: normalized
         - name: from
           in: query
           required: false
@@ -1471,13 +1478,6 @@ paths:
             format: int64
             default: 0
           example: 0
-        - name: sentimentStats
-          in: query
-          required: false
-          description: Same as combined user-feed stats (default **`normalized`**).
-          schema:
-            $ref: '#/components/schemas/SentimentStatsMode'
-          example: normalized
       responses:
         '200':
           description: Paginated list of sentiment rollups per interval

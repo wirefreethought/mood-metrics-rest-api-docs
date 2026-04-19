@@ -240,12 +240,13 @@ paths:
       summary: Aggregate platform-feed statistics by time bucket
       description: |
         Returns a paginated list of time-bucketed rollups for the specified platform feed. Each item includes interval
-        bounds (UTC), **sentiment** statistics as three parallel rollups (**positive**, **negative**, **neutral**—each
-        with mean score, variance, and sample counts for analyses labeled that sentiment in the bucket), and per-**emotion**
-        rollups for that interval.
+        bounds (UTC), optional raw **sentiment** triples (**positive** / **negative** / **neutral** rollups: mean score,
+        variance, sample counts), optional **sentimentDistribution** (row-mass-weighted **share** per label with approximate
+        **range95** (approximate 95% share bounds) and **stdError** for shares when `basis` is `OK`), and per-**emotion** rollups for that interval.
 
-        Use **granularity** for bucket size, optional **from** / **to** to bound the window, and **limit** / **offset**
-        for pagination—the same semantics as the user-feed stats endpoints.
+        Query **`sentimentStats`** selects the representation: **`normalized`** (default)—`sentimentDistribution` only;
+        **`raw`**—`sentiment` only; **`both`**—both. Use **granularity** for bucket size, optional **from** / **to** to bound
+        the window, and **limit** / **offset** for pagination—the same semantics as the user-feed stats endpoints.
       operationId: getPlatformFeedStats
       parameters:
         - name: id
@@ -304,6 +305,15 @@ paths:
             format: int64
             default: 0
           example: 0
+        - name: sentimentStats
+          in: query
+          required: false
+          description: |
+            Which sentiment-shaped fields appear on each interval row (default **`normalized`**). Responses should be
+            treated as varying by this parameter for HTTP caching.
+          schema:
+            $ref: '#/components/schemas/SentimentStatsMode'
+          example: normalized
       responses:
         '200':
           description: Paginated list of combined sentiment and emotion rollups per interval
@@ -311,42 +321,138 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/WftWsResultPageListFeedIntervalStats'
-              example:
-                data:
-                  - interval:
-                      from: "2025-04-07T00:00:00Z"
-                      to: "2025-04-08T00:00:00Z"
-                    sentiment:
-                      positive:
-                        avgScore: 0.72
-                        variance: 0.04
-                        sampleCount: 220
-                        segmentCount: 1
-                      negative:
-                        avgScore: 0.18
-                        variance: 0.02
-                        sampleCount: 95
-                        segmentCount: 1
-                      neutral:
-                        avgScore: 0.55
-                        variance: 0.06
-                        sampleCount: 197
-                        segmentCount: 1
-                    emotions:
-                      - emotion: HAPPINESS
-                        avgScore: 0.55
-                        variance: 0.04
-                        sampleCount: 512
-                        segmentCount: 1
-                      - emotion: ANTICIPATION
-                        avgScore: 0.28
-                        variance: 0.07
-                        sampleCount: 140
-                        segmentCount: 1
-                errors: []
-                metadata:
-                  currentOffset: 0
-                  totalCount: 22
+              examples:
+                normalized_default:
+                  summary: Default — `sentimentDistribution` only
+                  value:
+                    data:
+                      - interval:
+                          from: "2025-04-07T00:00:00Z"
+                          to: "2025-04-08T00:00:00Z"
+                        sentimentDistribution:
+                          basis: OK
+                          method: DELTA_NORMAL_INDEP_MU
+                          positive:
+                            share: 0.42
+                            range95:
+                              low: 0.38
+                              high: 0.46
+                            stdError: 0.0204
+                            sampleCount: 220
+                          negative:
+                            share: 0.18
+                            range95:
+                              low: 0.14
+                              high: 0.22
+                            stdError: 0.0204
+                            sampleCount: 95
+                          neutral:
+                            share: 0.40
+                            range95:
+                              low: 0.36
+                              high: 0.44
+                            stdError: 0.0204
+                            sampleCount: 197
+                        emotions:
+                          - emotion: HAPPINESS
+                            avgScore: 0.55
+                            variance: 0.04
+                            sampleCount: 512
+                            segmentCount: 1
+                          - emotion: ANTICIPATION
+                            avgScore: 0.28
+                            variance: 0.07
+                            sampleCount: 140
+                            segmentCount: 1
+                    errors: []
+                    metadata:
+                      currentOffset: 0
+                      totalCount: 22
+                raw_only:
+                  summary: "`sentimentStats=raw` — raw triple only"
+                  value:
+                    data:
+                      - interval:
+                          from: "2025-04-07T00:00:00Z"
+                          to: "2025-04-08T00:00:00Z"
+                        sentiment:
+                          positive:
+                            avgScore: 0.72
+                            variance: 0.04
+                            sampleCount: 220
+                            segmentCount: 1
+                          negative:
+                            avgScore: 0.18
+                            variance: 0.02
+                            sampleCount: 95
+                            segmentCount: 1
+                          neutral:
+                            avgScore: 0.55
+                            variance: 0.06
+                            sampleCount: 197
+                            segmentCount: 1
+                        emotions:
+                          - emotion: HAPPINESS
+                            avgScore: 0.55
+                            variance: 0.04
+                            sampleCount: 512
+                            segmentCount: 1
+                    errors: []
+                    metadata:
+                      currentOffset: 0
+                      totalCount: 22
+                both:
+                  summary: "`sentimentStats=both`"
+                  value:
+                    data:
+                      - interval:
+                          from: "2025-04-07T00:00:00Z"
+                          to: "2025-04-08T00:00:00Z"
+                        sentiment:
+                          positive:
+                            avgScore: 0.72
+                            variance: 0.04
+                            sampleCount: 220
+                            segmentCount: 1
+                          negative:
+                            avgScore: 0.18
+                            variance: 0.02
+                            sampleCount: 95
+                            segmentCount: 1
+                          neutral:
+                            avgScore: 0.55
+                            variance: 0.06
+                            sampleCount: 197
+                            segmentCount: 1
+                        sentimentDistribution:
+                          basis: OK
+                          method: DELTA_NORMAL_INDEP_MU
+                          positive:
+                            share: 0.42
+                            range95:
+                              low: 0.38
+                              high: 0.46
+                            stdError: 0.0204
+                            sampleCount: 220
+                          negative:
+                            share: 0.18
+                            range95:
+                              low: 0.14
+                              high: 0.22
+                            stdError: 0.0204
+                            sampleCount: 95
+                          neutral:
+                            share: 0.40
+                            range95:
+                              low: 0.36
+                              high: 0.44
+                            stdError: 0.0204
+                            sampleCount: 197
+                        emotions: []
+                    errors: []
+                    metadata:
+                      currentOffset: 0
+                      totalCount: 22
 
   /platform-feeds/{id}/stats/emotions:
     get:
@@ -444,8 +550,9 @@ paths:
         - platform-feed
       summary: Sentiment-only statistics for a platform feed by time bucket
       description: |
-        Same behavior as `GET /platform-feeds/{id}/stats`, but each row contains only the **sentiment** triple (positive,
-        negative, neutral rollups) for the interval (no per-emotion array).
+        Same time bucketing as `GET /platform-feeds/{id}/stats`, but each row has no per-emotion array. **`sentimentStats`**
+        controls whether rows include **`sentimentDistribution`** (default), raw **`sentiment`**, or **both** (see combined
+        stats endpoint).
       operationId: getPlatformFeedSentimentStats
       parameters:
         - name: id
@@ -500,6 +607,13 @@ paths:
             type: integer
             format: int64
             default: 0
+        - name: sentimentStats
+          in: query
+          required: false
+          description: Same as combined stats — default **`normalized`** (`sentimentDistribution` only).
+          schema:
+            $ref: '#/components/schemas/SentimentStatsMode'
+          example: normalized
       responses:
         '200':
           description: Paginated list of sentiment rollups per interval
@@ -507,31 +621,69 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/WftWsResultPageListSentimentIntervalStats'
-              example:
-                data:
-                  - interval:
-                      from: "2025-03-01T00:00:00Z"
-                      to: "2025-04-01T00:00:00Z"
-                    sentiment:
-                      positive:
-                        avgScore: 0.58
-                        variance: 0.05
-                        sampleCount: 1200
-                        segmentCount: 1
-                      negative:
-                        avgScore: 0.22
-                        variance: 0.03
-                        sampleCount: 800
-                        segmentCount: 1
-                      neutral:
-                        avgScore: 0.48
-                        variance: 0.08
-                        sampleCount: 2021
-                        segmentCount: 1
-                errors: []
-                metadata:
-                  currentOffset: 0
-                  totalCount: 3
+              examples:
+                normalized_default:
+                  summary: Default — distribution only
+                  value:
+                    data:
+                      - interval:
+                          from: "2025-03-01T00:00:00Z"
+                          to: "2025-04-01T00:00:00Z"
+                        sentimentDistribution:
+                          basis: OK
+                          method: DELTA_NORMAL_INDEP_MU
+                          positive:
+                            share: 0.35
+                            range95:
+                              low: 0.31
+                              high: 0.39
+                            stdError: 0.0204
+                            sampleCount: 1200
+                          negative:
+                            share: 0.22
+                            range95:
+                              low: 0.18
+                              high: 0.26
+                            stdError: 0.0204
+                            sampleCount: 800
+                          neutral:
+                            share: 0.43
+                            range95:
+                              low: 0.39
+                              high: 0.47
+                            stdError: 0.0204
+                            sampleCount: 600
+                    errors: []
+                    metadata:
+                      currentOffset: 0
+                      totalCount: 3
+                raw_only:
+                  summary: Raw triple
+                  value:
+                    data:
+                      - interval:
+                          from: "2025-03-01T00:00:00Z"
+                          to: "2025-04-01T00:00:00Z"
+                        sentiment:
+                          positive:
+                            avgScore: 0.58
+                            variance: 0.05
+                            sampleCount: 1200
+                            segmentCount: 1
+                          negative:
+                            avgScore: 0.22
+                            variance: 0.03
+                            sampleCount: 800
+                            segmentCount: 1
+                          neutral:
+                            avgScore: 0.48
+                            variance: 0.08
+                            sampleCount: 2021
+                            segmentCount: 1
+                    errors: []
+                    metadata:
+                      currentOffset: 0
+                      totalCount: 3
 
   /system/encryption/info:
     get:
@@ -1033,9 +1185,10 @@ paths:
         - user-feed
       summary: Aggregate user-feed statistics by time bucket
       description: |
-        Returns a paginated list of time-bucketed rollups for the specified user feed. Each item includes the interval
-        bounds (UTC), **sentiment** as three parallel rollups (**positive**, **negative**, **neutral**), and per-**emotion**
-        rollups for that interval.
+        Returns a paginated list of time-bucketed rollups for the specified user feed. Each item includes interval bounds
+        (UTC), optional raw **sentiment** triples and/or **sentimentDistribution** (normalized shares + **range95** / **stdError**), and per-**emotion**
+        rollups. Query **`sentimentStats`** selects the representation (default **`normalized`**)—same semantics as platform
+        combined stats.
 
         Bucket boundaries are controlled by **granularity** (`HOUR`, `DAY`, `WEEK`, `MONTH`, or `LIFETIME`). Use optional
         **from** and **to** (`date-time`) to limit the window; use **limit** and **offset** to page through intervals.
@@ -1099,6 +1252,13 @@ paths:
             format: int64
             default: 0
           example: 0
+        - name: sentimentStats
+          in: query
+          required: false
+          description: Same as `GET /platform-feeds/{id}/stats` (default **`normalized`**).
+          schema:
+            $ref: '#/components/schemas/SentimentStatsMode'
+          example: normalized
       responses:
         '200':
           description: Paginated list of combined sentiment and emotion rollups per interval
@@ -1111,22 +1271,30 @@ paths:
                   - interval:
                       from: "2025-04-07T00:00:00Z"
                       to: "2025-04-08T00:00:00Z"
-                    sentiment:
+                    sentimentDistribution:
+                      basis: OK
+                      method: DELTA_NORMAL_INDEP_MU
                       positive:
-                        avgScore: 0.64
-                        variance: 0.05
-                        sampleCount: 18
-                        segmentCount: 1
+                        share: 0.41
+                        range95:
+                          low: 0.37
+                          high: 0.45
+                        stdError: 0.0204
+                        sampleCount: 220
                       negative:
-                        avgScore: 0.12
-                        variance: 0.02
-                        sampleCount: 8
-                        segmentCount: 1
+                        share: 0.19
+                        range95:
+                          low: 0.15
+                          high: 0.23
+                        stdError: 0.0204
+                        sampleCount: 95
                       neutral:
-                        avgScore: 0.51
-                        variance: 0.07
-                        sampleCount: 22
-                        segmentCount: 1
+                        share: 0.40
+                        range95:
+                          low: 0.36
+                          high: 0.44
+                        stdError: 0.0204
+                        sampleCount: 197
                     emotions:
                       - emotion: HAPPINESS
                         avgScore: 0.61
@@ -1243,9 +1411,8 @@ paths:
         - user-feed
       summary: Sentiment-only statistics for a user feed by time bucket
       description: |
-        Same time bucketing and query parameters as `GET /user-feeds/{id}/stats`, but each item contains only the
-        **sentiment** triple (positive, negative, neutral rollups) for the interval (no per-emotion breakdown). Useful for
-        sparklines and high-level trends.
+        Same time bucketing as `GET /user-feeds/{id}/stats`, but each row has no per-emotion breakdown. **`sentimentStats`**
+        selects **`sentimentDistribution`** (default), raw **`sentiment`**, or **both**.
       operationId: getUserFeedSentimentStats
       parameters:
         - name: id
@@ -1304,6 +1471,13 @@ paths:
             format: int64
             default: 0
           example: 0
+        - name: sentimentStats
+          in: query
+          required: false
+          description: Same as combined user-feed stats (default **`normalized`**).
+          schema:
+            $ref: '#/components/schemas/SentimentStatsMode'
+          example: normalized
       responses:
         '200':
           description: Paginated list of sentiment rollups per interval
@@ -1316,22 +1490,30 @@ paths:
                   - interval:
                       from: "2025-03-24T00:00:00Z"
                       to: "2025-03-31T00:00:00Z"
-                    sentiment:
+                    sentimentDistribution:
+                      basis: OK
+                      method: DELTA_NORMAL_INDEP_MU
                       positive:
-                        avgScore: 0.55
-                        variance: 0.08
-                        sampleCount: 80
-                        segmentCount: 1
+                        share: 0.36
+                        range95:
+                          low: 0.32
+                          high: 0.40
+                        stdError: 0.0204
+                        sampleCount: 180
                       negative:
-                        avgScore: 0.25
-                        variance: 0.04
-                        sampleCount: 45
-                        segmentCount: 1
+                        share: 0.24
+                        range95:
+                          low: 0.20
+                          high: 0.28
+                        stdError: 0.0204
+                        sampleCount: 120
                       neutral:
-                        avgScore: 0.42
-                        variance: 0.10
-                        sampleCount: 90
-                        segmentCount: 1
+                        share: 0.40
+                        range95:
+                          low: 0.36
+                          high: 0.44
+                        stdError: 0.0204
+                        sampleCount: 200
                 errors: []
                 metadata:
                   currentOffset: 0
@@ -1619,14 +1801,90 @@ components:
           format: int64
           description: Number of segments or buckets aggregated into this rollup
 
+    SentimentStatsMode:
+      type: string
+      description: |
+        Which sentiment fields each interval row includes for combined stats (`GET .../stats`) and sentiment-only stats
+        (`GET .../stats/sentiment`). HTTP caches should vary by this query parameter (or disable caching) so clients never
+        mix representations.
+      enum:
+        - normalized
+        - raw
+        - both
+      default: normalized
+
+    SentimentDistributionBasis:
+      type: string
+      description: Whether normalized **share**, **range95**, and **stdError** are defined for the bucket.
+      enum:
+        - NO_MASS
+        - ALL_SCORES_ZERO
+        - OK
+
+    Range95:
+      type: object
+      description: |
+        Approximate **95% range** for the **estimated share** (Normal interval, clipped to `[0, 1]`). Serialized as
+        property **`range95`** on `SentimentDistributionLabelStats`.
+      properties:
+        low:
+          type: number
+          format: double
+        high:
+          type: number
+          format: double
+
+    SentimentDistributionLabelStats:
+      type: object
+      description: |
+        Per-label normalized **share** (row-mass-weighted mean contribution / sum across labels), plus approximate
+        **95% range** (`range95`), **std. error** (`stdError`), and **sampleCount** (raw rows in that label’s outer rollup)
+        for that share when `basis` is **OK** (not raw `RollupStats.variance`).
+      properties:
+        share:
+          type: number
+          format: double
+        range95:
+          $ref: '#/components/schemas/Range95'
+        stdError:
+          type: number
+          format: double
+        sampleCount:
+          type: integer
+          format: int64
+          description: Raw analysis rows in the bucket for this label (same meaning as `RollupStats.sampleCount` on the raw sentiment arm).
+
+    SentimentDistributionStats:
+      type: object
+      description: Normalized sentiment mass distribution across positive / negative / neutral for the bucket.
+      properties:
+        basis:
+          $ref: '#/components/schemas/SentimentDistributionBasis'
+        method:
+          type: string
+          description: How `range95` and `stdError` were produced (e.g. `DELTA_NORMAL_INDEP_MU`).
+        positive:
+          $ref: '#/components/schemas/SentimentDistributionLabelStats'
+        negative:
+          $ref: '#/components/schemas/SentimentDistributionLabelStats'
+        neutral:
+          $ref: '#/components/schemas/SentimentDistributionLabelStats'
+
     FeedIntervalStats:
       type: object
-      description: Full combined rollup for one time bucket—sentiment triple (positive / negative / neutral) plus per-emotion breakdown
+      description: |
+        Full combined rollup for one time bucket: optional raw **sentiment** triple, optional **sentimentDistribution**
+        (normalized shares + **range95** / **stdError**), and per-emotion breakdown. Which sentiment fields appear is controlled by query
+        **`sentimentStats`** (default **`normalized`** = distribution only).
       properties:
         interval:
           $ref: '#/components/schemas/IntervalBounds'
         sentiment:
           $ref: '#/components/schemas/SentimentTripleStats'
+          description: Present when `sentimentStats` is `raw` or `both`; omitted or null when `normalized`.
+        sentimentDistribution:
+          $ref: '#/components/schemas/SentimentDistributionStats'
+          description: Present when `sentimentStats` is `normalized` (default) or `both`; omitted or null when `raw` only.
         emotions:
           type: array
           description: Per-emotion rollups for the same interval
@@ -1669,12 +1927,18 @@ components:
 
     SentimentIntervalStats:
       type: object
-      description: Per-interval sentiment triple only (no per-emotion list)
+      description: |
+        Per-interval sentiment payload (no per-emotion list). Raw **sentiment** and/or **sentimentDistribution** per
+        **`sentimentStats`** (default **`normalized`**).
       properties:
         interval:
           $ref: '#/components/schemas/IntervalBounds'
         sentiment:
           $ref: '#/components/schemas/SentimentTripleStats'
+          description: Present when `sentimentStats` is `raw` or `both`.
+        sentimentDistribution:
+          $ref: '#/components/schemas/SentimentDistributionStats'
+          description: Present when `sentimentStats` is `normalized` (default) or `both`.
 
     SentimentTripleStats:
       type: object

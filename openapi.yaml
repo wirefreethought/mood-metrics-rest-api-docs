@@ -686,7 +686,38 @@ paths:
                       currentOffset: 0
                       totalCount: 3
 
-  /usage/limits/feed/max-history:
+  /usage/limits/feed:
+    get:
+      tags:
+        - usage
+      summary: Combined feed usage limits for your plan
+      description: |
+        Returns **`maxHistoryDays`** and **`allowedGranularities`** from the resolved access policy in one response—the
+        same values as `GET /usage/limits/feed/history` and `GET /usage/limits/feed/granularity`.
+
+        **Authentication is optional.** Unauthenticated requests use the **default** access policy when no tier-specific
+        resolvers match request headers.
+
+        **Admin:** values reflect **configured plan metadata**; admins may still query outside these bounds where the API
+        allows.
+      operationId: getFeedUsageLimits
+      security: []
+      responses:
+        '200':
+          description: Combined feed history and granularity limits
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/WftWsResultFeedUsageLimitsVoid'
+              example:
+                data:
+                  maxHistoryDays: 30
+                  allowedGranularities:
+                    - DAY
+                    - LIFETIME
+                errors: []
+
+  /usage/limits/feed/history:
     get:
       tags:
         - usage
@@ -701,7 +732,7 @@ paths:
 
         **Admin:** this endpoint reflects **configured plan metadata**; admins may still query outside these bounds where
         the API allows (e.g. broader history on stats).
-      operationId: getFeedUsageLimitsMaxHistory
+      operationId: getFeedUsageLimitsHistory
       security: []
       responses:
         '200':
@@ -715,7 +746,7 @@ paths:
                   maxHistoryDays: 30
                 errors: []
 
-  /usage/limits/feed/allowed-granularities:
+  /usage/limits/feed/granularity:
     get:
       tags:
         - usage
@@ -728,7 +759,7 @@ paths:
 
         **Admin:** this list reflects plan configuration; admins may still request granularities **outside** this list on
         stats endpoints where the API grants an admin bypass.
-      operationId: getFeedUsageLimitsAllowedGranularities
+      operationId: getFeedUsageLimitsGranularity
       security: []
       responses:
         '200':
@@ -1767,6 +1798,20 @@ components:
             Maximum history length in days for non-admin feed reads. **`<= 0`** means unlimited lookback (subject to
             other caps).
 
+    FeedUsageLimits:
+      type: object
+      description: Combined feed consumption limits (history window and allowed stat granularities)
+      properties:
+        maxHistoryDays:
+          type: integer
+          format: int64
+          description: Same semantics as `FeedMaxHistoryLimits.maxHistoryDays`.
+        allowedGranularities:
+          type: array
+          items:
+            $ref: '#/components/schemas/StatGranularity'
+          description: Same semantics as `FeedAllowedGranularitiesLimits.allowedGranularities`.
+
     FeedAllowedGranularitiesLimits:
       type: object
       description: Feed consumption limit for allowed statistics bucket sizes
@@ -1783,6 +1828,18 @@ components:
       properties:
         data:
           $ref: '#/components/schemas/FeedMaxHistoryLimits'
+        errors:
+          type: array
+          items:
+            $ref: '#/components/schemas/WftError'
+        metadata: {}
+
+    WftWsResultFeedUsageLimitsVoid:
+      type: object
+      description: Standard wrapper for combined feed usage limits
+      properties:
+        data:
+          $ref: '#/components/schemas/FeedUsageLimits'
         errors:
           type: array
           items:

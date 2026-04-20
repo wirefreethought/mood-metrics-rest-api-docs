@@ -41,6 +41,10 @@ tags:
     description: Platform-scoped feeds (`/platform-feeds`) and related analyses and statistics
   - name: user-feed
     description: User-scoped feeds (`/user-feeds`) and related analyses and statistics
+  - name: usage
+    description: |
+      Usage and plan limits for feed consumption (`/usage/limits/...`). **Authentication is optional**; without
+      credentials or tier-resolving headers, values reflect **deployment defaults** from the default access policy.
 
 paths:
   /analyses:
@@ -681,6 +685,66 @@ paths:
                     metadata:
                       currentOffset: 0
                       totalCount: 3
+
+  /usage/limits/feed/max-history:
+    get:
+      tags:
+        - usage
+      summary: Maximum feed history window (days) for your plan
+      description: |
+        Returns **`maxHistoryDays`** from the resolved access policy—the same cap applied to feed-backed reads and
+        statistics time windows for **non-admin** principals. **`maxHistoryDays <= 0`** means unlimited lookback (still
+        subject to other policy caps such as “to” not beyond now).
+
+        **Authentication is optional.** Unauthenticated requests use the **default** access policy when no tier-specific
+        resolvers match request headers.
+
+        **Admin:** this endpoint reflects **configured plan metadata**; admins may still query outside these bounds where
+        the API allows (e.g. broader history on stats).
+      operationId: getFeedUsageLimitsMaxHistory
+      security: []
+      responses:
+        '200':
+          description: Plan limit for feed history window
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/WftWsResultFeedMaxHistoryLimitsVoid'
+              example:
+                data:
+                  maxHistoryDays: 30
+                errors: []
+
+  /usage/limits/feed/allowed-granularities:
+    get:
+      tags:
+        - usage
+      summary: Allowed stat granularities for your plan
+      description: |
+        Returns **`allowedGranularities`** from the resolved access policy—the same allowlist enforced for **non-admin**
+        feed statistics queries.
+
+        **Authentication is optional**; anonymous callers receive **default** deployment limits.
+
+        **Admin:** this list reflects plan configuration; admins may still request granularities **outside** this list on
+        stats endpoints where the API grants an admin bypass.
+      operationId: getFeedUsageLimitsAllowedGranularities
+      security: []
+      responses:
+        '200':
+          description: Allowed stat granularities for feed consumption
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/WftWsResultFeedAllowedGranularitiesLimitsVoid'
+              example:
+                data:
+                  allowedGranularities:
+                    - DAY
+                    - WEEK
+                    - MONTH
+                    - LIFETIME
+                errors: []
 
   /system/encryption/info:
     get:
@@ -1686,6 +1750,51 @@ components:
       properties:
         data:
           $ref: '#/components/schemas/SentimentAnalysisFeed'
+        errors:
+          type: array
+          items:
+            $ref: '#/components/schemas/WftError'
+        metadata: {}
+
+    FeedMaxHistoryLimits:
+      type: object
+      description: Feed consumption limit for maximum queryable history window
+      properties:
+        maxHistoryDays:
+          type: integer
+          format: int64
+          description: |
+            Maximum history length in days for non-admin feed reads. **`<= 0`** means unlimited lookback (subject to
+            other caps).
+
+    FeedAllowedGranularitiesLimits:
+      type: object
+      description: Feed consumption limit for allowed statistics bucket sizes
+      properties:
+        allowedGranularities:
+          type: array
+          items:
+            $ref: '#/components/schemas/StatGranularity'
+          description: Granularities allowed for non-admin feed stats queries (stable sort order is not guaranteed)
+
+    WftWsResultFeedMaxHistoryLimitsVoid:
+      type: object
+      description: Standard wrapper for feed max-history usage limit
+      properties:
+        data:
+          $ref: '#/components/schemas/FeedMaxHistoryLimits'
+        errors:
+          type: array
+          items:
+            $ref: '#/components/schemas/WftError'
+        metadata: {}
+
+    WftWsResultFeedAllowedGranularitiesLimitsVoid:
+      type: object
+      description: Standard wrapper for feed allowed-granularities usage limit
+      properties:
+        data:
+          $ref: '#/components/schemas/FeedAllowedGranularitiesLimits'
         errors:
           type: array
           items:

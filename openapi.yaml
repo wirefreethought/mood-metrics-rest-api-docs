@@ -43,8 +43,9 @@ tags:
     description: User-scoped feeds (`/user-feeds`) and related analyses and statistics
   - name: usage
     description: |
-      Usage and plan limits for feed consumption (`/usage/limits/...`). **Authentication is optional**; without
-      credentials or tier-resolving headers, values reflect **deployment defaults** from the default access policy.
+      Usage and plan limits for feed consumption and paging (`/usage/limits/...`, including `/usage/limits/paging`).
+      **Authentication is optional**; without credentials or tier-resolving headers, values reflect **deployment
+      defaults** from the default access policy.
 
 paths:
   /analyses:
@@ -685,6 +686,31 @@ paths:
                     metadata:
                       currentOffset: 0
                       totalCount: 3
+
+  /usage/limits/paging:
+    get:
+      tags:
+        - usage
+      summary: Maximum page size (limit) for collection paging
+      description: |
+        Returns **`maxAllowedPageSize`** from the resolved access policy—the maximum **`limit`** query parameter value
+        accepted on paged collection endpoints when max page-size policy is enabled server-side.
+
+        **Authentication is optional.** Unauthenticated requests use the **default** access policy when no tier-specific
+        resolvers match request headers.
+      operationId: getPagingUsageLimits
+      security: []
+      responses:
+        '200':
+          description: Plan limit for paged query size
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/WftWsResultPagingUsageLimitsVoid'
+              example:
+                data:
+                  maxAllowedPageSize: 10
+                errors: []
 
   /usage/limits/feed:
     get:
@@ -1781,6 +1807,28 @@ components:
       properties:
         data:
           $ref: '#/components/schemas/SentimentAnalysisFeed'
+        errors:
+          type: array
+          items:
+            $ref: '#/components/schemas/WftError'
+        metadata: {}
+
+    PagingUsageLimits:
+      type: object
+      description: Usage limit for maximum collection page size (`limit` query parameter)
+      properties:
+        maxAllowedPageSize:
+          type: integer
+          format: int64
+          description: |
+            Maximum allowed `limit` for paged reads. Matches the resolved access policy’s `maxAllowedPageSize`.
+
+    WftWsResultPagingUsageLimitsVoid:
+      type: object
+      description: Standard wrapper for paging usage limit
+      properties:
+        data:
+          $ref: '#/components/schemas/PagingUsageLimits'
         errors:
           type: array
           items:

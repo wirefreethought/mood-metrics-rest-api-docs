@@ -43,7 +43,8 @@ tags:
     description: User-scoped feeds (`/user-feeds`) and related analyses and statistics
   - name: usage
     description: |
-      Usage and plan limits for feed consumption and paging (`/usage/limits/...`, including `/usage/limits/paging`).
+      Usage and plan limits for feed consumption, paging, and rate (`/usage/limits/...`, including `/usage/limits/paging`
+      and `/usage/limits/rate`).
       **Authentication is optional**; without credentials or tier-resolving headers, values reflect **deployment
       defaults** from the default access policy.
 
@@ -801,6 +802,33 @@ paths:
                     - WEEK
                     - MONTH
                     - LIFETIME
+                errors: []
+
+  /usage/limits/rate:
+    get:
+      tags:
+        - usage
+      summary: Configured requests-per-minute for your plan
+      description: |
+        Returns **`rpm`** from the resolved RapidAPI plan metadata when **`X-RapidAPI-Subscription`** (and related
+        proxy headers) resolve to a tier. Otherwise returns **60** (deployment default for non–Rapid API traffic).
+
+        **Authentication is optional.** Unauthenticated requests without Rapid tier headers use the default value.
+
+        Values are configured per plan in deployment (`requests-per-minute`); they should match the RPM advertised for
+        each tier on the API Hub.
+      operationId: getRateUsageLimits
+      security: []
+      responses:
+        '200':
+          description: Requests-per-minute limit for the caller's plan or default
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/WftWsResultRateUsageLimitsVoid'
+              example:
+                data:
+                  rpm: 120
                 errors: []
 
   /system/encryption/info:
@@ -1829,6 +1857,29 @@ components:
       properties:
         data:
           $ref: '#/components/schemas/PagingUsageLimits'
+        errors:
+          type: array
+          items:
+            $ref: '#/components/schemas/WftError'
+        metadata: {}
+
+    RateUsageLimits:
+      type: object
+      description: Usage limit for requests per minute (RapidAPI plan metadata or deployment default)
+      properties:
+        rpm:
+          type: integer
+          format: int32
+          description: |
+            Maximum requests per minute for the resolved RapidAPI subscription tier. **60** when the request does not
+            resolve to a RapidAPI plan policy.
+
+    WftWsResultRateUsageLimitsVoid:
+      type: object
+      description: Standard wrapper for rate (RPM) usage limit
+      properties:
+        data:
+          $ref: '#/components/schemas/RateUsageLimits'
         errors:
           type: array
           items:

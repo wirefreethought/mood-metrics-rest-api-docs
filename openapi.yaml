@@ -161,6 +161,9 @@ paths:
         **`name`** ascending, then **`id`** ascending.
 
         Supports pagination via `limit` and `offset`, and sorting via the `sort` parameter (allowed fields: `name`, `id`).
+
+        Each list item includes feed metadata (**`id`**, **`name`**, **`description`**, **`maxSize`**) but **not** the
+        current analysis count (**`size`**). Use **`GET /platform-feeds/{id}`** to retrieve a feed including its **`size`**.
       operationId: listPlatformFeeds
       parameters:
         - name: limit
@@ -200,7 +203,6 @@ paths:
                   - id: c3d4e5f6-a7b8-9012-cdef-ab1234567890
                     name: twitter-brand-mentions
                     description: Platform-wide sentiment tracking for Twitter brand mentions
-                    size: 128
                     maxSize: 5000
                 errors: []
                 metadata:
@@ -982,6 +984,9 @@ paths:
         When **`sort`** is omitted, results are ordered by feed **`name`** ascending, then **`id`** ascending.
 
         Supports pagination via `limit` and `offset`, and sorting via the `sort` parameter (allowed fields: `name`, `id`).
+
+        Each list item includes feed metadata (**`id`**, **`name`**, **`description`**, **`maxSize`**) but **not** the
+        current analysis count (**`size`**). Use **`GET /user-feeds/{id}`** to retrieve a feed including its **`size`**.
       operationId: listUserFeeds
       parameters:
         - name: limit
@@ -1021,7 +1026,6 @@ paths:
                   - id: f1a2b3c4-d5e6-7890-abcd-ef1234567890
                     name: acme-product-reviews
                     description: Sentiment tracking for Acme Corp product reviews
-                    size: 42
                     maxSize: 1000
                 errors: []
                 metadata:
@@ -1749,9 +1753,38 @@ components:
           type: string
           description: Updated description of the feed's purpose or scope
 
+    SentimentAnalysisFeedListItem:
+      type: object
+      description: |
+        Feed metadata as returned by **list** feeds endpoints (`GET /platform-feeds`, `GET /user-feeds`).
+        Omits **`size`** (current analysis count); use **`GET .../platform-feeds/{id}`** or **`GET .../user-feeds/{id}`** for a full feed including **`size`**.
+      required:
+        - id
+        - name
+      properties:
+        id:
+          type: string
+          description: Unique identifier of the feed
+        name:
+          type: string
+          description: Human-readable name of the feed
+        description:
+          type: string
+          description: Description of the feed's purpose or scope
+        maxSize:
+          type: integer
+          format: int32
+          description: Maximum number of analysis entries the feed can hold
+
     SentimentAnalysisFeed:
       type: object
-      description: Represents a sentiment analysis feed used for grouping and tracking analyses
+      description: |
+        Full sentiment analysis feed resource including the current analysis count (**`size`**).
+        Returned by feed-details and create/update feed responses.
+      required:
+        - id
+        - name
+        - size
       properties:
         id:
           type: string
@@ -2339,7 +2372,7 @@ components:
         data:
           type: array
           items:
-            $ref: '#/components/schemas/SentimentAnalysisFeed'
+            $ref: '#/components/schemas/SentimentAnalysisFeedListItem'
         errors:
           type: array
           items:

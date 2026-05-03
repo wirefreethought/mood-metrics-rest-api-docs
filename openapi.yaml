@@ -248,7 +248,7 @@ paths:
       summary: Aggregate platform-feed statistics by time bucket
       description: |
         Returns a paginated list of time-bucketed rollups for the specified platform feed. Each item includes interval
-        bounds (UTC), optional raw **sentiment** triples (**positive** / **negative** / **neutral** rollups: mean score,
+        bounds (UTC), optional raw **sentiment** rollups (**positive** / **negative** / **neutral** / **ambiguous** families: mean score,
         variance, sample counts), optional **sentimentDistribution** (row-mass-weighted **share** per label with approximate
         **range95** (approximate 95% share bounds) and **stdError** for shares when `basis` is `OK`), and per-**emotion** rollups for that interval.
 
@@ -376,7 +376,7 @@ paths:
                       currentOffset: 0
                       totalCount: 22
                 raw_only:
-                  summary: "`sentimentStats=raw` — raw triple only"
+                  summary: "`sentimentStats=raw` — raw family rollups only"
                   value:
                     data:
                       - interval:
@@ -663,7 +663,7 @@ paths:
                       currentOffset: 0
                       totalCount: 3
                 raw_only:
-                  summary: Raw triple
+                  summary: Raw family rollups
                   value:
                     data:
                       - interval:
@@ -1336,7 +1336,7 @@ paths:
       summary: Aggregate user-feed statistics by time bucket
       description: |
         Returns a paginated list of time-bucketed rollups for the specified user feed. Each item includes interval bounds
-        (UTC), optional raw **sentiment** triples and/or **sentimentDistribution** (normalized shares + **range95** / **stdError**), and per-**emotion**
+        (UTC), optional raw **sentiment** rollups and/or **sentimentDistribution** (normalized shares + **range95** / **stdError**), and per-**emotion**
         rollups. Query **`sentimentStats`** selects the representation (default **`normalized`**)—same semantics as platform
         combined stats.
 
@@ -2149,7 +2149,7 @@ components:
 
     SentimentDistributionStats:
       type: object
-      description: Normalized sentiment mass distribution across positive / negative / neutral for the bucket.
+      description: Normalized sentiment mass distribution across positive, negative, neutral, and ambiguous families for the bucket.
       properties:
         basis:
           $ref: '#/components/schemas/SentimentDistributionBasis'
@@ -2159,18 +2159,20 @@ components:
           $ref: '#/components/schemas/SentimentDistributionLabelStats'
         neutral:
           $ref: '#/components/schemas/SentimentDistributionLabelStats'
+        ambiguous:
+          $ref: '#/components/schemas/SentimentDistributionLabelStats'
 
     FeedIntervalStats:
       type: object
       description: |
-        Full combined rollup for one time bucket: optional raw **sentiment** triple, optional **sentimentDistribution**
+        Full combined rollup for one time bucket: optional raw **sentiment** rollups (four families), optional **sentimentDistribution**
         (normalized shares + **range95** / **stdError**), and per-emotion breakdown. Which sentiment fields appear is controlled by query
         **`sentimentStats`** (default **`normalized`** = distribution only).
       properties:
         interval:
           $ref: '#/components/schemas/IntervalBounds'
         sentiment:
-          $ref: '#/components/schemas/SentimentTripleStats'
+          $ref: '#/components/schemas/SentimentFamilyRollupStats'
           description: Present when `sentimentStats` is `raw` or `both`; omitted or null when `normalized`.
         sentimentDistribution:
           $ref: '#/components/schemas/SentimentDistributionStats'
@@ -2224,28 +2226,32 @@ components:
         interval:
           $ref: '#/components/schemas/IntervalBounds'
         sentiment:
-          $ref: '#/components/schemas/SentimentTripleStats'
+          $ref: '#/components/schemas/SentimentFamilyRollupStats'
           description: Present when `sentimentStats` is `raw` or `both`.
         sentimentDistribution:
           $ref: '#/components/schemas/SentimentDistributionStats'
           description: Present when `sentimentStats` is `normalized` (default) or `both`.
 
-    SentimentTripleStats:
+    SentimentFamilyRollupStats:
       type: object
       description: |
-        Parallel rollups for analyses labeled **positive**, **negative**, or **neutral** in the interval. Each track’s
-        `sampleCount` counts only rows with that label; analyses with no sentiment label do not contribute to any track.
+        Parallel rollups for sentiment **families** in the interval: **positive** (including very / slightly positive),
+        **negative** (including very / slightly negative), **neutral**, and **ambiguous** (mixed / uncertain). Each
+        track’s `sampleCount` counts only rows routed to that family; analyses with no sentiment label do not contribute.
         Unused tracks report zero mean and variance with `sampleCount` 0.
       required:
         - positive
         - negative
         - neutral
+        - ambiguous
       properties:
         positive:
           $ref: '#/components/schemas/RollupStats'
         negative:
           $ref: '#/components/schemas/RollupStats'
         neutral:
+          $ref: '#/components/schemas/RollupStats'
+        ambiguous:
           $ref: '#/components/schemas/RollupStats'
 
     StatGranularity:

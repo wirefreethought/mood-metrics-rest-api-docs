@@ -2070,6 +2070,14 @@ components:
           description: Rollup statistics for each detected emotion in this interval
           items:
             $ref: '#/components/schemas/EmotionRollupStats'
+        bucketRowCount:
+          type: integer
+          format: int64
+          description: Total analyses counted into this bucket (integrated-mean denominator context).
+        bucketSumWeight:
+          type: number
+          format: double
+          description: Sum of row weights in the bucket (denominator for `avgScore` on each emotion rollup).
 
     EmotionRollupStats:
       type: object
@@ -2080,11 +2088,21 @@ components:
         avgScore:
           type: number
           format: double
-          description: Mean score for this emotion in the interval
+          description: |
+            Bucket-integrated mean: sum of (row weight × score) for this emotion’s samples in the bucket, divided by
+            `bucketSumWeight` on the parent interval row.
+        meanWhenPresent:
+          type: number
+          format: double
+          nullable: true
+          description: |
+            Segment-aggregated mean among rows/lines that carry this emotion (conditional intensity); omitted when
+            `sampleCount` is 0.
         variance:
           type: number
           format: double
-          description: Variance of scores across samples in the interval
+          description: |
+            Variance of the segment-aggregated conditional mean in persistence (not the variance of `avgScore`).
         sampleCount:
           type: integer
           format: int64
@@ -2182,6 +2200,14 @@ components:
           description: Per-emotion rollups for the same interval
           items:
             $ref: '#/components/schemas/EmotionRollupStats'
+        bucketRowCount:
+          type: integer
+          format: int64
+          description: Total analyses in the bucket (context for integrated means on rollups).
+        bucketSumWeight:
+          type: number
+          format: double
+          description: Sum of row weights in the bucket (integrated-mean denominator).
 
     IntervalBounds:
       type: object
@@ -2203,11 +2229,20 @@ components:
         avgScore:
           type: number
           format: double
-          description: Mean normalized score in the bucket
+          description: |
+            Bucket-integrated mean for this label’s samples (`integratedSumWs` / interval `bucketSumWeight`). When
+            `sampleCount` is 0, this is 0 and should be treated as missing for charting.
+        meanWhenPresent:
+          type: number
+          format: double
+          nullable: true
+          description: |
+            Hierarchical mean among analyses routed to this label (conditional intensity); null when `sampleCount` is 0.
         variance:
           type: number
           format: double
-          description: Variance of scores in the bucket
+          description: |
+            Variance of the segment-aggregated conditional mean in persistence (not variance of `avgScore`).
         sampleCount:
           type: integer
           format: int64
@@ -2231,6 +2266,12 @@ components:
         sentimentDistribution:
           $ref: '#/components/schemas/SentimentDistributionStats'
           description: Present when `sentimentStats` is `normalized` (default) or `both`.
+        bucketRowCount:
+          type: integer
+          format: int64
+        bucketSumWeight:
+          type: number
+          format: double
 
     SentimentFamilyRollupStats:
       type: object

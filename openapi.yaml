@@ -2129,7 +2129,6 @@ components:
       description: Whether normalized **share**, **range95**, and **stdError** are defined for the bucket.
       enum:
         - NO_MASS
-        - ALL_SCORES_ZERO
         - OK
 
     Range95:
@@ -2363,7 +2362,16 @@ components:
           format: double
           minimum: 0
           maximum: 1
-          description: Confidence score for the detected sentiment (0.0 – 1.0)
+          description: LLM classification confidence in the chosen sentiment label (0.0 – 1.0); not polarity or per-arm intensity.
+        intensityScore:
+          type: number
+          format: double
+          minimum: 0
+          maximum: 1
+          description: >-
+            Per-arm intensity derived from the fine-grained sentiment label (VERY_* = 1.0, POSITIVE/NEGATIVE = 0.66,
+            SLIGHTLY_* = 0.33, NEUTRAL/MIXED/UNCERTAIN = 1.0). Used for feed bucket rollups; not persisted — always
+            computed from `sentiment`.
         emotionScores:
           type: array
           description: Per-emotion confidence scores

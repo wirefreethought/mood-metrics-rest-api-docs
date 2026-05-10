@@ -2111,6 +2111,17 @@ components:
           type: integer
           format: int64
           description: Number of segments or buckets aggregated into this rollup
+        range95:
+          $ref: '#/components/schemas/Range95'
+          nullable: true
+          description: |
+            Approximate 95% interval for **`avgScore`** as the bucket-integrated mean (when computed); absent when not
+            populated or not applicable.
+        stdError:
+          type: number
+          format: double
+          nullable: true
+          description: Standard error matching **`range95`** when present.
 
     SentimentStatsMode:
       type: string
@@ -2134,8 +2145,9 @@ components:
     Range95:
       type: object
       description: |
-        Approximate **95% range** for the **estimated share** (Normal interval, clipped to `[0, 1]`). Serialized as
-        property **`range95`** on `SentimentDistributionLabelStats`.
+        Approximate **95% range** (Normal interval, clipped to `[0, 1]`): on **`sentimentDistribution`** labels this is
+        for the **estimated share**; on **`RollupStats`** / **`EmotionRollupStats`** it is for the bucket-integrated
+        **`avgScore`** when present (two-component Normal approximation).
       properties:
         low:
           type: number
@@ -2250,6 +2262,17 @@ components:
           type: integer
           format: int64
           description: Number of logical segments aggregated (implementation-specific)
+        range95:
+          $ref: '#/components/schemas/Range95'
+          nullable: true
+          description: |
+            Approximate 95% interval for **`avgScore`** as the bucket-integrated mean for this arm (two-component Normal
+            approximation); absent when not computed.
+        stdError:
+          type: number
+          format: double
+          nullable: true
+          description: Standard error matching **`range95`** when present.
 
     SentimentIntervalStats:
       type: object
